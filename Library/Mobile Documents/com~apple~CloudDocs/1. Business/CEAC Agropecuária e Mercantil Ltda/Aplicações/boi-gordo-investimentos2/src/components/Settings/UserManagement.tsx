@@ -1,0 +1,264 @@
+'use client';
+
+import { useState } from 'react';
+
+interface User {
+  id: string;
+  name: string;
+  cpf: string;
+  address: string;
+  phone: string;
+  email: string;
+}
+
+export default function UserManagement() {
+  const [users, setUsers] = useState<User[]>([
+    {
+      id: '1',
+      name: 'Carlos Eduardo Almeida',
+      cpf: '123.456.789-00',
+      address: 'Rua das Palmeiras, 123 - São Paulo, SP',
+      phone: '(11) 99999-9999',
+      email: 'carlos@ceacagro.com.br'
+    },
+    {
+      id: '2',
+      name: 'Maria Silva Santos',
+      cpf: '987.654.321-00',
+      address: 'Av. Brasil, 456 - Rio de Janeiro, RJ',
+      phone: '(21) 88888-8888',
+      email: 'maria@email.com'
+    }
+  ]);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    cpf: '',
+    address: '',
+    phone: '',
+    email: ''
+  });
+
+  const handleAddUser = () => {
+    // Disparar evento para abrir modal de usuário
+    const event = new CustomEvent('openUserRegistrationModal');
+    window.dispatchEvent(event);
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setFormData({
+      name: user.name,
+      cpf: user.cpf,
+      address: user.address,
+      phone: user.phone,
+      email: user.email
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteUser = (id: string) => {
+    if (confirm('Deseja remover este usuário?')) {
+      setUsers(users.filter(user => user.id !== id));
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (editingUser) {
+      // Editar usuário existente
+      setUsers(users.map(user => 
+        user.id === editingUser.id 
+          ? { ...editingUser, ...formData }
+          : user
+      ));
+    } else {
+      // Adicionar novo usuário
+      const newUser: User = {
+        id: Date.now().toString(),
+        ...formData
+      };
+      setUsers([...users, newUser]);
+    }
+    
+    setIsModalOpen(false);
+    setEditingUser(null);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  return (
+    <div className="card">
+      <div className="settings-header">
+        <div className="settings-header-main">
+          <h2>Gerenciamento de Usuários</h2>
+          <p className="settings-subtitle">
+            Cadastre e gerencie usuários que terão acesso ao sistema
+          </p>
+        </div>
+        <div className="settings-actions">
+          <button 
+            className="btn btn-primary btn-header-action"
+            onClick={handleAddUser}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <line x1="19" y1="8" x2="19" y2="14"></line>
+              <line x1="22" y1="11" x2="16" y2="11"></line>
+            </svg>
+            Novo Usuário
+          </button>
+        </div>
+      </div>
+
+      <div className="data-table-container">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>CPF</th>
+              <th>Endereço</th>
+              <th>Telefone</th>
+              <th>Email</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map(user => (
+              <tr key={user.id}>
+                <td><strong>{user.name}</strong></td>
+                <td>{user.cpf}</td>
+                <td>{user.address}</td>
+                <td>{user.phone}</td>
+                <td>{user.email}</td>
+                <td>
+                  <div className="action-buttons">
+                    <button 
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => handleEditUser(user)}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                      </svg>
+                      Editar
+                    </button>
+                    <button 
+                      className="btn btn-danger btn-sm"
+                      onClick={() => handleDeleteUser(user.id)}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="3,6 5,6 21,6"></polyline>
+                        <path d="M19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
+                      </svg>
+                      Excluir
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modal para adicionar/editar usuário */}
+      {isModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h3>{editingUser ? 'Editar Usuário' : 'Adicionar Usuário'}</h3>
+              <button className="modal-close" onClick={() => setIsModalOpen(false)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <form onSubmit={handleSubmit}>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Nome Completo</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">CPF</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      name="cpf"
+                      value={formData.cpf}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Endereço Completo</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Telefone</label>
+                    <input
+                      type="tel"
+                      className="form-control"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Email</label>
+                    <input
+                      type="email"
+                      className="form-control"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-actions">
+                  <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
+                    Cancelar
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    {editingUser ? 'Salvar Alterações' : 'Adicionar Usuário'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+} 
