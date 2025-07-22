@@ -1701,7 +1701,7 @@ body {
 /* Action Buttons */
 .action-buttons {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   justify-content: center;
   flex-wrap: wrap;
 }
@@ -4446,7 +4446,7 @@ tbody td {
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
-  gap: 6px !important;
+  gap: 4px !important;
 }
 
 /* REGRA 13: Centralização de badges e status */
@@ -4797,7 +4797,7 @@ th .btn,
 /* Enhanced Action Buttons para trading */
 .action-buttons {
   display: flex !important;
-  gap: 8px !important;
+  gap: 4px !important;
   justify-content: center !important;
   align-items: center !important;
 }
