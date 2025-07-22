@@ -248,7 +248,13 @@ export default function UserRegistrationModal({
           <form onSubmit={handleSubmit}>
             {/* Seção: Dados Pessoais */}
             <div className="form-section">
-              <h3 className="form-section-title">👤 Dados Pessoais</h3>
+              <h3 className="form-section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                Dados Pessoais
+              </h3>
               
               <div className="form-grid">
                 <div className="form-group">
@@ -317,7 +323,14 @@ export default function UserRegistrationModal({
             {/* Seção: Corretoras (OBRIGATÓRIO) */}
             <div className="form-section">
               <div className="form-section-header">
-                <h3 className="form-section-title">🏦 Corretoras Vinculadas *</h3>
+                <h3 className="form-section-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="2" y1="7" x2="22" y2="7"></line>
+                  </svg>
+                  Corretoras Vinculadas
+                  <span className="required-indicator">*</span>
+                </h3>
                 <button 
                   type="button" 
                   className="btn btn-success btn-sm"
@@ -378,9 +391,14 @@ export default function UserRegistrationModal({
               
               {formData.corretoras.length > 0 && (
                 <div className="selected-brokerages-summary">
-                  <small>
-                    ✅ {formData.corretoras.length} corretora{formData.corretoras.length > 1 ? 's' : ''} selecionada{formData.corretoras.length > 1 ? 's' : ''}
-                  </small>
+                  <div className="summary-content">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="20,6 9,17 4,12"></polyline>
+                    </svg>
+                    <small>
+                      {formData.corretoras.length} corretora{formData.corretoras.length > 1 ? 's' : ''} selecionada{formData.corretoras.length > 1 ? 's' : ''}
+                    </small>
+                  </div>
                 </div>
               )}
             </div>

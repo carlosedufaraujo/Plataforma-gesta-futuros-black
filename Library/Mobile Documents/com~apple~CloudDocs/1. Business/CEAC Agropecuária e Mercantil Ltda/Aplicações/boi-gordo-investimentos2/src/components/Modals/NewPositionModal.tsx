@@ -275,7 +275,15 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
           <form onSubmit={handleSubmit}>
             {/* Campo de Data */}
             <div className="form-section">
-              <h3 className="form-section-title">📅 Data da Operação</h3>
+              <h3 className="form-section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                Data da Operação
+              </h3>
               <div className="form-group">
                 <label className="form-label">Data</label>
                 <input 
@@ -293,7 +301,13 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
             {/* Lista de Posições */}
             <div className="form-section">
               <div className="form-section-header">
-                <h3 className="form-section-title">📈 Posições ({positions.length})</h3>
+                <h3 className="form-section-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 3v18h18"></path>
+                    <path d="M7 12l4-4 4 4 6-6"></path>
+                  </svg>
+                  Posições ({positions.length})
+                </h3>
                 <button 
                   type="button" 
                   className="btn btn-success btn-sm"
