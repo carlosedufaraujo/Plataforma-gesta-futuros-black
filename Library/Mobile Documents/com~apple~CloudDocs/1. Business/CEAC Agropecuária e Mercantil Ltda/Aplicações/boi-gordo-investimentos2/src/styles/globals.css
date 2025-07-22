@@ -6132,15 +6132,13 @@ body > div > div > p {
   white-space: nowrap !important;
 }
 
-/* FORÇA BRUTA - ESPAÇAMENTO ESPECÍFICO PARA PÁGINAS PROBLEMÁTICAS */
+/* REGRA ANTERIOR DESABILITADA - APLICAVA EM TODAS AS COLUNAS
+   Agora aplicamos espaçamento compacto apenas na coluna Ações */
 
-/* Configurações - Contratos */
+/* 
 [class*="contract"] .action-buttons,
-/* Configurações - Corretoras */  
 [class*="brokerage"] .action-buttons,
-/* Configurações - Usuários */
 [class*="user"] .action-buttons,
-/* Posições - Gestão */
 [class*="position"] .action-buttons,
 .data-table .action-buttons,
 .data-table td .action-buttons,
@@ -6152,10 +6150,47 @@ table .action-buttons {
   flex-wrap: nowrap !important;
 }
 
-/* Botões pequenos em todas as tabelas */
 .data-table .btn-sm,
 table .btn-sm,
 td .btn-sm {
+  padding: 3px 6px !important;
+  font-size: 11px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  min-width: auto !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
+}
+*/
+
+/* REGRA ESPECÍFICA: ESPAÇAMENTO COMPACTO APENAS NA COLUNA AÇÕES */
+/* Mantém centralização geral das tabelas, mas compacta botões na coluna Ações */
+
+th:last-child .action-buttons,
+td:last-child .action-buttons,
+th[class*="acoes"] .action-buttons,
+td[class*="acoes"] .action-buttons,
+th[class*="actions"] .action-buttons,
+td[class*="actions"] .action-buttons,
+.data-table th:last-child .action-buttons,
+.data-table td:last-child .action-buttons {
+  display: flex !important;
+  gap: 1px !important;
+  justify-content: center !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+}
+
+/* Botões compactos apenas na coluna Ações */
+th:last-child .btn-sm,
+td:last-child .btn-sm,
+th[class*="acoes"] .btn-sm,
+td[class*="acoes"] .btn-sm,
+th[class*="actions"] .btn-sm,
+td[class*="actions"] .btn-sm,
+.data-table th:last-child .btn-sm,
+.data-table td:last-child .btn-sm {
   padding: 3px 6px !important;
   font-size: 11px !important;
   display: flex !important;
