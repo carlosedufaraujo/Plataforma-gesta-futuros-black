@@ -268,16 +268,11 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
           <h2 className="modal-title">
             {editingPosition ? 'Editar Posição' : 'Nova Posição'}
           </h2>
-          <button className="modal-close" onClick={onClose}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+          <button className="modal-close" onClick={onClose}>×</button>
         </div>
 
         <div className="modal-body">
-          <form onSubmit={handleSubmit} className="position-form">
+          <form onSubmit={handleSubmit}>
             
             {/* Data da Operação */}
             <div className="form-group">
@@ -290,13 +285,10 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
               />
             </div>
 
-            {/* Separador */}
-            <div className="form-separator"></div>
-
-            {/* Lista de Posições */}
-            <div className="positions-section">
-              <div className="positions-header">
-                <h3 className="positions-title">
+            {/* Posições */}
+            <div className="form-section">
+              <div className="form-section-header">
+                <h3 className="form-section-title">
                   Posições ({positions.length})
                 </h3>
                 <button 
@@ -315,26 +307,27 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
               {positions.map((position, index) => (
                 <div key={position.id} className="position-item">
                   
-                  {/* Header da posição com número e botão remover */}
+                  {/* Header da posição */}
                   {positions.length > 1 && (
-                    <div className="position-item-header">
-                      <span className="position-number">#{index + 1}</span>
+                    <div className="position-header">
+                      <span className="position-number">Posição #{index + 1}</span>
                       <button 
                         type="button" 
-                        className="btn btn-danger btn-xs"
+                        className="btn btn-danger btn-sm"
                         onClick={() => removePosition(position.id)}
                       >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3,6 5,6 21,6"></polyline>
+                          <path d="M19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
                         </svg>
+                        Remover
                       </button>
                     </div>
                   )}
 
                   {/* Contrato */}
                   <div className="form-group">
-                    <label className="form-label required">Contrato</label>
+                    <label className="form-label">Contrato</label>
                     <div className="autocomplete-container">
                       <input 
                         ref={inputRef}
@@ -366,7 +359,7 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
 
                   {/* Direção */}
                   <div className="form-group">
-                    <label className="form-label required">Direção</label>
+                    <label className="form-label">Direção</label>
                     <div className="direction-selector">
                       <button
                         type="button"
@@ -392,9 +385,9 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
                   </div>
 
                   {/* Quantidade e Preço */}
-                  <div className="form-row">
+                  <div className="form-grid">
                     <div className="form-group">
-                      <label className="form-label required">Quantidade</label>
+                      <label className="form-label">Quantidade</label>
                       <input 
                         type="number" 
                         className={`form-input ${errors.quantity ? 'error' : ''}`}
@@ -407,59 +400,47 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label required">Preço de Entrada</label>
-                      <div className="price-input-container">
-                        <span className="currency-symbol">R$</span>
-                        <input 
-                          type="text" 
-                          className={`form-input price-input ${errors.price ? 'error' : ''}`}
-                          value={position.price}
-                          onChange={(e) => updatePosition(position.id, 'price', e.target.value)}
-                          placeholder="350,50"
-                        />
-                      </div>
+                      <label className="form-label">Preço de Entrada</label>
+                      <input 
+                        type="text" 
+                        className={`form-input ${errors.price ? 'error' : ''}`}
+                        value={position.price}
+                        onChange={(e) => updatePosition(position.id, 'price', e.target.value)}
+                        placeholder="350,50"
+                      />
                       {errors.price && <span className="error-message">{errors.price}</span>}
                     </div>
                   </div>
 
                   {/* Stop Loss e Take Profit */}
-                  <div className="form-row">
+                  <div className="form-grid">
                     <div className="form-group">
-                      <label className="form-label">Stop Loss</label>
-                      <div className="price-input-container">
-                        <span className="currency-symbol">R$</span>
-                        <input 
-                          type="text" 
-                          className="form-input price-input"
-                          value={position.stopLoss}
-                          onChange={(e) => updatePosition(position.id, 'stopLoss', e.target.value)}
-                          placeholder="320,00"
-                        />
-                      </div>
+                      <label className="form-label">Stop Loss (Opcional)</label>
+                      <input 
+                        type="text" 
+                        className="form-input"
+                        value={position.stopLoss}
+                        onChange={(e) => updatePosition(position.id, 'stopLoss', e.target.value)}
+                        placeholder="320,00"
+                      />
                     </div>
                     
                     <div className="form-group">
-                      <label className="form-label">Take Profit</label>
-                      <div className="price-input-container">
-                        <span className="currency-symbol">R$</span>
-                        <input 
-                          type="text" 
-                          className="form-input price-input"
-                          value={position.takeProfit}
-                          onChange={(e) => updatePosition(position.id, 'takeProfit', e.target.value)}
-                          placeholder="400,00"
-                        />
-                      </div>
+                      <label className="form-label">Take Profit (Opcional)</label>
+                      <input 
+                        type="text" 
+                        className="form-input"
+                        value={position.takeProfit}
+                        onChange={(e) => updatePosition(position.id, 'takeProfit', e.target.value)}
+                        placeholder="400,00"
+                      />
                     </div>
                   </div>
-
-                  {/* Separador entre posições */}
-                  {index < positions.length - 1 && <div className="position-separator"></div>}
                 </div>
               ))}
             </div>
 
-            {/* Footer com ações */}
+            {/* Ações */}
             <div className="modal-actions">
               <button type="button" className="btn btn-secondary" onClick={onClose}>
                 Cancelar

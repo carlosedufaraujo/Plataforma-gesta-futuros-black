@@ -6263,12 +6263,11 @@ td[class*="actions"] .btn-sm,
 
 /* Lista de Posições */
 .position-item {
-  background: var(--bg-primary);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 16px;
-  transition: all 0.2s ease;
 }
 
 .position-item:hover {
@@ -6941,53 +6940,33 @@ td[class*="actions"] .btn-sm,
 }
 
 /* ============================================
-   MODAL NOVA POSIÇÃO - MINIMALISTA
+/* Responsividade */
+@media (max-width: 768px) {
+  .position-item {
+    padding: 16px;
+  }
+  
+  .positions-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+}
+
+/* ============================================
+   MODAL NOVA POSIÇÃO - PADRÕES DO SISTEMA
    ============================================ */
 
-/* Remover estilos antigos complexos e usar padrões do sistema */
-.position-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* Separador simples */
-.form-separator {
-  height: 1px;
-  background: var(--border-color);
-  margin: 8px 0;
-}
-
-/* Header das posições */
-.positions-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.positions-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-/* Item de posição */
+/* Usar apenas estilos que já existem no sistema */
 .position-item {
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 20px;
-  background: var(--bg-secondary);
+  padding: 16px;
   margin-bottom: 16px;
 }
 
-.position-item:last-child {
-  margin-bottom: 0;
-}
-
-/* Header do item de posição */
-.position-item-header {
+.position-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -6997,15 +6976,12 @@ td[class*="actions"] .btn-sm,
 }
 
 .position-number {
-  font-size: 12px;
   font-weight: 600;
-  color: var(--text-secondary);
-  background: var(--bg-tertiary);
-  padding: 4px 8px;
-  border-radius: 4px;
+  color: var(--color-primary);
+  font-size: 14px;
 }
 
-/* Seletor de direção minimalista */
+/* Seletor de direção usando padrões existentes */
 .direction-selector {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -7044,53 +7020,4 @@ td[class*="actions"] .btn-sm,
   border-color: var(--color-negative);
   background: rgba(239, 68, 68, 0.1);
   color: var(--color-negative);
-}
-
-/* Inputs de preço */
-.price-input-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.currency-symbol {
-  position: absolute;
-  left: 12px;
-  color: var(--text-secondary);
-  font-weight: 500;
-  font-size: 14px;
-  z-index: 1;
-}
-
-.price-input {
-  padding-left: 32px !important;
-  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-  font-weight: 500;
-}
-
-/* Separador entre posições */
-.position-separator {
-  height: 1px;
-  background: var(--border-color);
-  margin: 20px 0;
-}
-
-/* Labels obrigatórios */
-.form-label.required::after {
-  content: " *";
-  color: var(--color-negative);
-  font-weight: 600;
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-  .position-item {
-    padding: 16px;
-  }
-  
-  .positions-header {
-    flex-direction: column;
-    gap: 12px;
-    align-items: stretch;
-  }
 }
