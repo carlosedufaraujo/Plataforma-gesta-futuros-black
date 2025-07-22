@@ -92,14 +92,14 @@ export default function BrokerageManagement() {
     setFormData({
       name: brokerage.name,
       cnpj: brokerage.cnpj,
-      address: brokerage.address,
+      address: brokerage.address || '',
       assessor: brokerage.assessor,
       phone: brokerage.phone,
       email: brokerage.email,
       milhoFees: brokerage.milhoFees.toString(),
       boiFees: brokerage.boiFees.toString(),
-      taxRate: (brokerage.taxRate || 0).toString(),
-      taxes: brokerage.taxes.toString(),
+      taxRate: '',
+      taxes: brokerage.taxes?.toString() || '',
       otherFees: brokerage.otherFees.toString()
     });
     setIsModalOpen(true);
@@ -275,7 +275,6 @@ export default function BrokerageManagement() {
               <th>Corretora</th>
               <th>Assessor</th>
               <th>Contato</th>
-              <th>Usuários Vinculados</th>
               <th>Taxas</th>
               <th>Ações</th>
             </tr>
@@ -285,71 +284,14 @@ export default function BrokerageManagement() {
               <tr key={brokerage.id}>
                 <td>
                   <div>
-                    <strong>{brokerage.name}</strong><br/>
-                    <small style={{ color: 'var(--text-secondary)' }}>
+                    <strong>{brokerage.name}</strong>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
                       CNPJ: {brokerage.cnpj}
-                    </small>
+                    </div>
                   </div>
                 </td>
-                <td>
-                  <div>
-                    <strong>{brokerage.assessor}</strong><br/>
-                    <small style={{ color: 'var(--text-secondary)' }}>
-                      {brokerage.email}
-                    </small>
-                  </div>
-                </td>
+                <td>{brokerage.assessor}</td>
                 <td>{brokerage.phone}</td>
-                <td>
-                  <div className="linked-users">
-                    {brokerage.linkedUsers && brokerage.linkedUsers.length > 0 ? (
-                      <div className="users-list">
-                        {brokerage.linkedUsers.map(user => (
-                          <div key={user.id} className="user-item">
-                            <span className="user-name">{user.name}</span>
-                            <button 
-                              className="btn btn-danger btn-xs"
-                              onClick={() => unlinkUserFromBrokerage(brokerage.id, user.id)}
-                              title="Desvincular usuário"
-                            >
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                              </svg>
-                            </button>
-                          </div>
-                        ))}
-                        <button 
-                          className="btn btn-success btn-xs"
-                          onClick={() => openUserLinkModal(brokerage.id)}
-                          title="Vincular mais usuários"
-                        >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                          </svg>
-                          Adicionar
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="no-users">
-                        <span style={{ color: 'var(--text-secondary)' }}>Nenhum usuário</span>
-                        <button 
-                          className="btn btn-primary btn-xs"
-                          onClick={() => openUserLinkModal(brokerage.id)}
-                        >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                          </svg>
-                          Vincular
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </td>
                 <td>
                   <div style={{ fontSize: '12px' }}>
                     <div>Milho: R$ {brokerage.milhoFees.toFixed(2)}</div>
@@ -375,7 +317,7 @@ export default function BrokerageManagement() {
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <polyline points="3,6 5,6 21,6"></polyline>
-                        <path d="M19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
+                        <path d="M19,6v14a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
                       </svg>
                       Excluir
                     </button>
@@ -533,6 +475,103 @@ export default function BrokerageManagement() {
                   </div>
                 </div>
 
+                {/* Seção de Usuários Vinculados (apenas no modo edição) */}
+                {editingBrokerage && (
+                  <div className="form-section">
+                    <h4>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                      </svg>
+                      Usuários Vinculados
+                    </h4>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginBottom: '16px' }}>
+                      Gerencie quais usuários têm acesso aos dados desta corretora
+                    </p>
+
+                    {/* Usuários já vinculados */}
+                    <div className="linked-users-section">
+                      <h5>Usuários Atuais ({editingBrokerage.linkedUsers?.length || 0})</h5>
+                      {editingBrokerage.linkedUsers && editingBrokerage.linkedUsers.length > 0 ? (
+                        <div className="linked-users-list">
+                          {editingBrokerage.linkedUsers.map(user => (
+                            <div key={user.id} className="linked-user-card">
+                              <div className="user-info">
+                                <strong>{user.name}</strong>
+                                <small>{user.email}</small>
+                              </div>
+                              <button 
+                                className="btn btn-danger btn-xs"
+                                onClick={() => unlinkUserFromBrokerage(editingBrokerage.id, user.id)}
+                                title="Desvincular usuário"
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ 
+                          textAlign: 'center', 
+                          padding: '20px', 
+                          background: 'var(--bg-secondary)', 
+                          borderRadius: '6px',
+                          border: '1px dashed var(--border-color)'
+                        }}>
+                          <p style={{ color: 'var(--text-secondary)', margin: '0' }}>
+                            Nenhum usuário vinculado a esta corretora
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Usuários disponíveis para vincular */}
+                    <div className="available-users-section" style={{ marginTop: '20px' }}>
+                      <h5>Adicionar Usuários</h5>
+                      {getAvailableUsersForBrokerage(editingBrokerage.id).length > 0 ? (
+                        <div className="available-users">
+                          {getAvailableUsersForBrokerage(editingBrokerage.id).map(user => (
+                            <div key={user.id} className="user-card">
+                              <div className="user-info">
+                                <strong>{user.name}</strong>
+                                <small>{user.email}</small>
+                                <small>CPF: {user.cpf}</small>
+                              </div>
+                              <button 
+                                className="btn btn-success btn-sm"
+                                onClick={() => linkUserToBrokerage(editingBrokerage.id, user.id)}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                                Vincular
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ 
+                          textAlign: 'center', 
+                          padding: '16px', 
+                          background: 'var(--bg-secondary)', 
+                          borderRadius: '6px',
+                          color: 'var(--text-secondary)'
+                        }}>
+                          <p style={{ margin: '0', fontSize: '13px' }}>
+                            Todos os usuários já estão vinculados a esta corretora
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="modal-actions">
                   <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
                     Cancelar
@@ -542,95 +581,6 @@ export default function BrokerageManagement() {
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal para vincular usuários */}
-      {showUserLinkModal && selectedBrokerageForUsers && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <div className="modal-header">
-              <h3 className="modal-title">
-                Vincular Usuários - {brokerages.find(b => b.id === selectedBrokerageForUsers)?.name}
-              </h3>
-              <button 
-                className="modal-close" 
-                onClick={() => {
-                  setShowUserLinkModal(false);
-                  setSelectedBrokerageForUsers(null);
-                }}
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="modal-body">
-              <div className="user-link-section">
-                <h4>Usuários Disponíveis</h4>
-                <div className="available-users">
-                  {getAvailableUsersForBrokerage(selectedBrokerageForUsers).length > 0 ? (
-                    getAvailableUsersForBrokerage(selectedBrokerageForUsers).map(user => (
-                      <div key={user.id} className="user-card">
-                        <div className="user-info">
-                          <strong>{user.name}</strong>
-                          <small>{user.email}</small>
-                          <small>CPF: {user.cpf}</small>
-                        </div>
-                        <button 
-                          className="btn btn-primary btn-sm"
-                          onClick={() => {
-                            linkUserToBrokerage(selectedBrokerageForUsers, user.id);
-                            setShowUserLinkModal(false);
-                            setSelectedBrokerageForUsers(null);
-                          }}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                          </svg>
-                          Vincular
-                        </button>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="no-available-users">
-                      <p>Todos os usuários já estão vinculados a esta corretora.</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Usuários já vinculados */}
-                <div className="linked-users-section">
-                  <h4>Usuários Vinculados</h4>
-                  <div className="linked-users-list">
-                    {brokerages.find(b => b.id === selectedBrokerageForUsers)?.linkedUsers?.map(user => (
-                      <div key={user.id} className="linked-user-card">
-                        <div className="user-info">
-                          <strong>{user.name}</strong>
-                          <small>{user.email}</small>
-                        </div>
-                        <span className="linked-badge">✅ Vinculado</span>
-                      </div>
-                    )) || <p>Nenhum usuário vinculado ainda.</p>}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="modal-actions">
-              <button 
-                className="btn btn-secondary"
-                onClick={() => {
-                  setShowUserLinkModal(false);
-                  setSelectedBrokerageForUsers(null);
-                }}
-              >
-                Fechar
-              </button>
             </div>
           </div>
         </div>
