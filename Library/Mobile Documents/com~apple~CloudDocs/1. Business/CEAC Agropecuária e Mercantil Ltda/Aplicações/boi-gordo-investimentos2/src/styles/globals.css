@@ -6775,3 +6775,464 @@ td[class*="actions"] .btn-sm,
     font-size: 13px;
   }
 }
+
+/* ============================================
+   MODAL NOVA POSIÇÃO - UI/UX PROFISSIONAL
+   ============================================ */
+
+/* Container da modal específica */
+.position-modal {
+  max-width: 900px;
+  width: 95vw;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header melhorado */
+.modal-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.modal-title-section {
+  flex: 1;
+}
+
+.modal-subtitle {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 4px 0 0 0;
+  line-height: 1.4;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+/* Body com scroll */
+.position-modal .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.position-form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Seções melhoradas */
+.form-section {
+  padding: 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.primary-section {
+  background: var(--bg-secondary);
+}
+
+.positions-section {
+  flex: 1;
+}
+
+/* Headers de seção */
+.section-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.section-title-group {
+  flex: 1;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.section-description {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Contador de posições */
+.positions-counter {
+  display: flex;
+  align-items: center;
+}
+
+.counter-badge {
+  background: var(--color-info);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+}
+
+/* Container de data */
+.date-input-container {
+  max-width: 300px;
+}
+
+.date-input {
+  font-family: inherit;
+}
+
+/* Lista de posições */
+.positions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Cards de posição */
+.position-card {
+  background: var(--bg-primary);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.position-card:hover {
+  border-color: var(--color-info);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Header do card */
+.position-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.position-number {
+  flex-shrink: 0;
+}
+
+.position-badge {
+  background: var(--color-primary);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.position-title {
+  flex: 1;
+}
+
+.position-title h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+}
+
+.position-preview {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.remove-position-btn {
+  padding: 4px !important;
+  min-width: auto !important;
+}
+
+/* Conteúdo do formulário */
+.position-form-content {
+  padding: 20px;
+}
+
+/* Linhas do formulário */
+.form-row {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.contract-row {
+  grid-template-columns: 1fr;
+}
+
+.operation-row {
+  grid-template-columns: 1fr;
+}
+
+.main-data-row {
+  grid-template-columns: 1fr 1fr;
+}
+
+.risk-row {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Grupo de contrato */
+.contract-group {
+  position: relative;
+}
+
+.contract-input {
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+/* Seletor de direção */
+.direction-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.direction-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.direction-btn:hover {
+  border-color: var(--color-info);
+  background: var(--bg-primary);
+}
+
+.direction-btn.active.long {
+  border-color: var(--color-success);
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--color-success);
+}
+
+.direction-btn.active.short {
+  border-color: var(--color-negative);
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-negative);
+}
+
+.direction-label {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+/* Inputs de preço */
+.price-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.currency-symbol {
+  position: absolute;
+  left: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 14px;
+  z-index: 1;
+}
+
+.price-input {
+  padding-left: 32px !important;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-weight: 500;
+}
+
+/* Seção de risco */
+.risk-section {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.risk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.risk-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.optional-badge {
+  background: var(--color-info);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+/* Labels obrigatórios */
+.form-label.required::after {
+  content: " *";
+  color: var(--color-negative);
+  font-weight: 600;
+}
+
+/* Sugestões melhoradas */
+.suggestion-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.suggestion-contract {
+  font-weight: 600;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+.suggestion-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Hints melhorados */
+.input-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.input-hint svg {
+  color: var(--color-success);
+  flex-shrink: 0;
+}
+
+/* Footer da modal */
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+}
+
+.footer-summary {
+  flex: 1;
+}
+
+.summary-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.summary-info svg {
+  color: var(--color-success);
+  flex-shrink: 0;
+}
+
+.footer-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-large {
+  padding: 10px 20px !important;
+  font-weight: 600 !important;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .position-modal {
+    width: 98vw;
+    max-height: 95vh;
+  }
+  
+  .modal-header-content {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .main-data-row,
+  .risk-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-footer {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .footer-actions {
+    width: 100%;
+  }
+  
+  .footer-actions .btn {
+    flex: 1;
+  }
+}
