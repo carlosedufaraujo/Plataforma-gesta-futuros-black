@@ -156,13 +156,46 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
     }
   };
 
+  const handleDuplicatePosition = (position: Position) => {
+    if (confirm(`Deseja duplicar a posição ${position.contract}?\n\nIsso criará uma nova posição idêntica com os mesmos parâmetros.`)) {
+      const duplicatedPosition: Omit<Position, 'id'> = {
+        contract: position.contract,
+        direction: position.direction,
+        quantity: position.quantity,
+        entryPrice: position.entryPrice,
+        currentPrice: position.currentPrice,
+        stopLoss: position.stopLoss,
+        takeProfit: position.takeProfit,
+        status: 'OPEN',
+        openDate: new Date().toISOString(),
+        userId: position.userId,
+        brokerageId: position.brokerageId
+      };
+      
+      addPosition(duplicatedPosition);
+      
+      // Feedback visual
+      const toast = document.createElement('div');
+      toast.textContent = `✅ Posição ${position.contract} duplicada com sucesso!`;
+      toast.style.cssText = `
+        position: fixed; top: 70px; right: 20px; z-index: 10002;
+        background: var(--color-info); color: white; padding: 12px 20px;
+        border-radius: 8px; font-weight: 500; animation: slideIn 0.3s ease-out;
+      `;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 3000);
+    }
+  };
+
   const handleClosePosition = (positionId: string, currentPrice: number) => {
     const position = positions.find(p => p.id === positionId);
     if (!position) return;
 
-    const confirmed = confirm(`Deseja fechar a posição ${position.contract} (${position.direction}) ao preço atual de R$ ${currentPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}?`);
-    
-    if (confirmed) {
+    if (confirm(`Deseja fechar a posição ${position.contract}?\n\nPreço atual: R$ ${currentPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}\n\nEsta ação não pode ser desfeita.`)) {
       closePosition(positionId, currentPrice);
       
       // Feedback visual
@@ -170,7 +203,7 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
       toast.textContent = `✅ Posição ${position.contract} fechada com sucesso!`;
       toast.style.cssText = `
         position: fixed; top: 70px; right: 20px; z-index: 10002;
-        background: var(--color-success); color: white; padding: 12px 20px;
+        background: var(--color-warning); color: white; padding: 12px 20px;
         border-radius: 8px; font-weight: 500; animation: slideIn 0.3s ease-out;
       `;
       document.body.appendChild(toast);
@@ -245,6 +278,18 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
                         <line x1="9" y1="9" x2="15" y2="15"></line>
                       </svg>
                       Fechar
+                    </button>
+                    <button 
+                      className="btn btn-info btn-sm"
+                      onClick={() => handleDuplicatePosition(position)}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                      </svg>
+                      Duplicar
                     </button>
                   </div>
                 ];

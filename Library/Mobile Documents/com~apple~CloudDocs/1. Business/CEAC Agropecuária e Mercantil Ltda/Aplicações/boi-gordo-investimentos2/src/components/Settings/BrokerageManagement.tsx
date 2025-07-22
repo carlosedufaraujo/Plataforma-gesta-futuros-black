@@ -88,8 +88,26 @@ export default function BrokerageManagement() {
   };
 
   const handleDeleteBrokerage = (id: string) => {
-    if (confirm('Deseja remover esta corretora?')) {
-      setBrokerages(brokerages.filter(brokerage => brokerage.id !== id));
+    const brokerage = brokerages.find(b => b.id === id);
+    if (!brokerage) return;
+
+    if (confirm(`Deseja excluir a corretora "${brokerage.name}"?\n\nCNPJ: ${brokerage.cnpj}\n\nEsta ação não pode ser desfeita e removerá todos os dados associados.`)) {
+      setBrokerages(prev => prev.filter(brokerage => brokerage.id !== id));
+      
+      // Feedback visual
+      const toast = document.createElement('div');
+      toast.textContent = `✅ Corretora "${brokerage.name}" excluída com sucesso!`;
+      toast.style.cssText = `
+        position: fixed; top: 70px; right: 20px; z-index: 10002;
+        background: var(--color-negative); color: white; padding: 12px 20px;
+        border-radius: 8px; font-weight: 500; animation: slideIn 0.3s ease-out;
+      `;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 3000);
     }
   };
 

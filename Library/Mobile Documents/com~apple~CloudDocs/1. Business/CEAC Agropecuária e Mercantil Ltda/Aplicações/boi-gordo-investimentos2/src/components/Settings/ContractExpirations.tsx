@@ -54,8 +54,26 @@ export default function ContractExpirations() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Deseja remover este vencimento?')) {
+    const expiration = expirations.find(e => e.id === id);
+    if (!expiration) return;
+
+    if (confirm(`Deseja excluir o vencimento "${expiration.contractType}${expiration.code}"?\n\nVencimento: ${expiration.expirationDate}\n\nEsta ação não pode ser desfeita e pode afetar posições existentes.`)) {
       updateExpirations(expirations.filter(exp => exp.id !== id));
+      
+      // Feedback visual
+      const toast = document.createElement('div');
+      toast.textContent = `✅ Vencimento "${expiration.contractType}${expiration.code}" excluído com sucesso!`;
+      toast.style.cssText = `
+        position: fixed; top: 70px; right: 20px; z-index: 10002;
+        background: var(--color-negative); color: white; padding: 12px 20px;
+        border-radius: 8px; font-weight: 500; animation: slideIn 0.3s ease-out;
+      `;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 3000);
     }
   };
 

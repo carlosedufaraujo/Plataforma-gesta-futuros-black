@@ -60,8 +60,26 @@ export default function UserManagement() {
   };
 
   const handleDeleteUser = (id: string) => {
-    if (confirm('Deseja remover este usuário?')) {
-      setUsers(users.filter(user => user.id !== id));
+    const user = users.find(u => u.id === id);
+    if (!user) return;
+
+    if (confirm(`Deseja excluir o usuário "${user.name}"?\n\nCPF: ${user.cpf}\nEmail: ${user.email}\n\nEsta ação não pode ser desfeita.`)) {
+      setUsers(prev => prev.filter(user => user.id !== id));
+      
+      // Feedback visual
+      const toast = document.createElement('div');
+      toast.textContent = `✅ Usuário "${user.name}" excluído com sucesso!`;
+      toast.style.cssText = `
+        position: fixed; top: 70px; right: 20px; z-index: 10002;
+        background: var(--color-negative); color: white; padding: 12px 20px;
+        border-radius: 8px; font-weight: 500; animation: slideIn 0.3s ease-out;
+      `;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 3000);
     }
   };
 
