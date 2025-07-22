@@ -1804,20 +1804,41 @@ td .btn-success:hover {
 .action-buttons .btn-info,
 .data-table .btn-info,
 td .btn-info {
-  background: #06b6d4 !important;
-  border-color: #06b6d4 !important;
+  background: #0ea5e9 !important;
+  border-color: #0ea5e9 !important;
   color: white !important;
+  border: 1px solid #0ea5e9 !important;
+  transition: all 0.2s ease !important;
 }
 
 .btn-info:hover,
 .action-buttons .btn-info:hover,
 .data-table .btn-info:hover,
 td .btn-info:hover {
-  background: #0891b2 !important;
-  border-color: #0891b2 !important;
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
   color: white !important;
   transform: translateY(-1px) !important;
-  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.4) !important;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4) !important;
+}
+
+/* Botões Info pequenos - mesma qualidade dos outros */
+.action-buttons .btn-sm.btn-info,
+.data-table .btn-sm.btn-info,
+td .btn-sm.btn-info {
+  background: #0ea5e9 !important;
+  border-color: #0ea5e9 !important;
+  color: white !important;
+}
+
+.action-buttons .btn-sm.btn-info:hover,
+.data-table .btn-sm.btn-info:hover,
+td .btn-sm.btn-info:hover {
+  background: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: white !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4) !important;
 }
 
 /* Form Sections */
@@ -6176,7 +6197,7 @@ td[class*="actions"] .action-buttons,
 .data-table th:last-child .action-buttons,
 .data-table td:last-child .action-buttons {
   display: flex !important;
-  gap: 1px !important;
+  gap: 6px !important;
   justify-content: center !important;
   align-items: center !important;
   flex-wrap: nowrap !important;
@@ -6191,11 +6212,11 @@ th[class*="actions"] .btn-sm,
 td[class*="actions"] .btn-sm,
 .data-table th:last-child .btn-sm,
 .data-table td:last-child .btn-sm {
-  padding: 3px 6px !important;
-  font-size: 11px !important;
+  padding: 4px 8px !important;
+  font-size: 12px !important;
   display: flex !important;
   align-items: center !important;
-  gap: 3px !important;
+  gap: 4px !important;
   min-width: auto !important;
   white-space: nowrap !important;
   margin: 0 !important;
