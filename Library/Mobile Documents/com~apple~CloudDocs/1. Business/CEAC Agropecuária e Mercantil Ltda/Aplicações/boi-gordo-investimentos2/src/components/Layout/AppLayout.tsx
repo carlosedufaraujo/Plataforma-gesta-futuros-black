@@ -8,6 +8,7 @@ import MobileMenuToggle from './MobileMenuToggle';
 import ModalManager from '@/components/Common/ModalManager';
 
 import { useTheme } from '@/hooks/useTheme';
+import FloatingActionButton from './FloatingActionButton';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -138,6 +139,15 @@ export default function AppLayout({
           {children}
         </main>
       </div>
+
+      {/* Botão Flutuante para Nova Posição */}
+      <FloatingActionButton 
+        onClick={() => {
+          // Dispatch do evento customizado para abrir modal Nova Posição
+          const event = new CustomEvent('openNewPositionModal');
+          window.dispatchEvent(event);
+        }}
+      />
 
       <ModalManager />
     </div>
