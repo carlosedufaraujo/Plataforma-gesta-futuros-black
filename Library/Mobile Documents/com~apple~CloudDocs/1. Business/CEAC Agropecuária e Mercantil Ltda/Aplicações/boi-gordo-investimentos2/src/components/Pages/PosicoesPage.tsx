@@ -15,7 +15,8 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
   const [activeTab, setActiveTab] = useState<PositionTabType>('gestao');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingPosition, setEditingPosition] = useState<Position | null>(null);
-  const { positions, closePosition, updatePosition } = useData();
+  const [showNewPositionModal, setShowNewPositionModal] = useState(false);
+  const { positions, closePosition, updatePosition, addPosition } = useData();
 
   // Opções de período para descrição
   const periodOptions = [
@@ -119,6 +120,11 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
     setEditingPosition(null);
+  };
+
+  const handleNewPosition = (positionData: Omit<Position, 'id'>) => {
+    addPosition(positionData);
+    setShowNewPositionModal(false);
   };
 
   const handleEditSubmit = (updatedPositionData: Omit<Position, 'id'>) => {
@@ -303,6 +309,28 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
 
   return (
     <div>
+      {/* Cabeçalho da Página */}
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: '24px', color: 'var(--text-bright)' }}>
+            📈 Posições de Futuros
+          </h1>
+          <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: '14px' }}>
+            Gerenciamento de posições e operações ativas
+          </p>
+        </div>
+        
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button 
+            className="btn btn-primary"
+            onClick={() => setShowNewPositionModal(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            ➕ Nova Posição
+          </button>
+        </div>
+      </div>
+
       <TabNavigation
         tabs={tabs}
         activeTab={activeTab}
@@ -310,6 +338,16 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
       />
 
       {renderTabContent()}
+
+      {/* Modal de Nova Posição */}
+      <NewPositionModal
+        isOpen={showNewPositionModal}
+        onClose={() => {
+          setShowNewPositionModal(false);
+          setEditingPosition(null);
+        }}
+        onSubmit={handleNewPosition}
+      />
 
       {/* Modal de Edição de Posição */}
       <NewPositionModal
