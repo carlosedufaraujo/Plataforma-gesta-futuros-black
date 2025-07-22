@@ -38,6 +38,23 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
     }
   }, [activeExpirations, formData.expiration]);
 
+  // Sincronizar contractInput quando editingPosition mudar
+  useEffect(() => {
+    if (editingPosition) {
+      setContractInput(editingPosition.contract);
+      setFormData(prev => ({
+        ...prev,
+        contractType: editingPosition.contract.slice(0, 3),
+        expiration: editingPosition.contract.slice(3, 4),
+        direction: editingPosition.direction,
+        quantity: editingPosition.quantity.toString(),
+        price: editingPosition.entryPrice.toString(),
+        stopLoss: editingPosition.stopLoss?.toString() || '',
+        takeProfit: editingPosition.takeProfit?.toString() || ''
+      }));
+    }
+  }, [editingPosition]);
+
   // Gerar lista de contratos disponíveis
   const generateContractSuggestions = () => {
     const contracts = [];
