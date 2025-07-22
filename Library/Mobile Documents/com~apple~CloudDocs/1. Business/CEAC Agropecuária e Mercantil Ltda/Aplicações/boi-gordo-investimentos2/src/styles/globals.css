@@ -6661,3 +6661,117 @@ td[class*="actions"] .btn-sm,
   color: var(--color-success);
   font-weight: 500;
 }
+
+/* ============================================
+   ESTADOS VAZIOS - UX PROFISSIONAL
+   ============================================ */
+
+/* Estado vazio principal */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 40px;
+  color: var(--text-secondary);
+  min-height: 300px;
+}
+
+.empty-state .empty-icon {
+  margin-bottom: 24px;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.empty-state h3 {
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+}
+
+.empty-state p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 24px 0;
+  max-width: 400px;
+  line-height: 1.5;
+}
+
+.empty-state .btn {
+  margin-top: 8px;
+}
+
+/* Estado vazio pequeno */
+.empty-state-small {
+  padding: 32px 20px;
+  text-align: center;
+}
+
+.empty-state-small svg {
+  color: var(--text-muted);
+  opacity: 0.5;
+  margin-bottom: 16px;
+}
+
+.empty-state-small p {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin: 8px 0;
+}
+
+/* Dicas nos estados vazios */
+.empty-state-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border-left: 3px solid var(--color-info);
+}
+
+.empty-state-hint svg {
+  color: var(--color-info);
+  flex-shrink: 0;
+}
+
+.empty-state-hint p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+/* Preview de estatísticas */
+.stats-preview {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.stats-preview p {
+  margin: 4px 0;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .empty-state {
+    padding: 40px 20px;
+    min-height: 250px;
+  }
+  
+  .empty-state h3 {
+    font-size: 18px;
+  }
+  
+  .empty-state p {
+    font-size: 13px;
+  }
+}

@@ -315,7 +315,12 @@ export default function RentabilidadePage({ selectedPeriod = '30d' }: Rentabilid
   if (!currentSession.user) {
     return (
       <div className="empty-state">
-        <div className="empty-icon">📊</div>
+        <div className="empty-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M3 3v18h18"></path>
+            <path d="M7 12l4-4 4 4 6-6"></path>
+          </svg>
+        </div>
         <h3>Carregando Dashboard...</h3>
         <p>Aguarde enquanto carregamos seus dados.</p>
       </div>
@@ -326,7 +331,12 @@ export default function RentabilidadePage({ selectedPeriod = '30d' }: Rentabilid
   if (positions.length === 0 && transactions.length === 0) {
     return (
       <div className="empty-state">
-        <div className="empty-icon">📈</div>
+        <div className="empty-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M3 3v18h18"></path>
+            <path d="M7 12l4-4 4 4 6-6"></path>
+          </svg>
+        </div>
         <h3>Bem-vindo ao seu Dashboard!</h3>
         <p>Comece cadastrando sua primeira posição para ver as análises aqui.</p>
         <button 
@@ -336,7 +346,11 @@ export default function RentabilidadePage({ selectedPeriod = '30d' }: Rentabilid
             window.dispatchEvent(event);
           }}
         >
-          + Nova Posição
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Nova Posição
         </button>
       </div>
     );

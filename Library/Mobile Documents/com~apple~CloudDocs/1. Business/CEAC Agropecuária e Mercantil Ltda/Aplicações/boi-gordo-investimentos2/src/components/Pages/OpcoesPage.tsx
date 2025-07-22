@@ -160,7 +160,13 @@ export default function OpcoesPage({ selectedPeriod }: OpcoesPageProps) {
           <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
             <p>{emptyMessages[activeTab as keyof typeof emptyMessages]}</p>
             {activeTab === 'ativas' && (
-              <p>💡 Clique em "Nova Opção" no cabeçalho para criar sua primeira opção</p>
+              <div className="empty-state-hint">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M8 12l2 2 4-4"></path>
+                </svg>
+                <p>Clique em "Nova Opção" no cabeçalho para criar sua primeira opção</p>
+              </div>
             )}
           </div>
         </div>

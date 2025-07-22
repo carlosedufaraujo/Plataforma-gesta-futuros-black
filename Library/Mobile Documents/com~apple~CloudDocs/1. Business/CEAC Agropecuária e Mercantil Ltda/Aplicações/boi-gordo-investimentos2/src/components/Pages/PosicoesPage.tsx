@@ -300,10 +300,18 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
           <div className="card">
             <h2>Performance das Posições</h2>
             <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-              <p>📈 Análise de performance detalhada será implementada</p>
-              <p>Total de posições: {positions.length}</p>
-              <p>Posições abertas: {positions.filter(p => p.status === 'OPEN').length}</p>
-              <p>Posições fechadas: {positions.filter(p => p.status === 'CLOSED').length}</p>
+              <div className="empty-state-small">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 3v18h18"></path>
+                  <path d="M7 12l4-4 4 4 6-6"></path>
+                </svg>
+                <p>Análise de performance detalhada será implementada</p>
+                <div className="stats-preview">
+                  <p>Total de posições: {positions.length}</p>
+                  <p>Posições abertas: {positions.filter(p => p.status === 'OPEN').length}</p>
+                  <p>Posições fechadas: {positions.filter(p => p.status === 'CLOSED').length}</p>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -348,7 +356,14 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
           <div className="card">
             <h2>Resumo Visual</h2>
             <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-              <p>📊 Gráficos e resumos visuais serão implementados</p>
+              <div className="empty-state-small">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <path d="M7 10h10"></path>
+                  <path d="M7 14h10"></path>
+                </svg>
+                <p>Gráficos e resumos visuais serão implementados</p>
+              </div>
             </div>
           </div>
         );
