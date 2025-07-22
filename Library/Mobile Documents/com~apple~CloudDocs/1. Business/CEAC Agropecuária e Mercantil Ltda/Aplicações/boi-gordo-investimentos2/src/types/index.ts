@@ -46,7 +46,7 @@ export interface UserBrokerageAccess {
 }
 
 export interface CurrentUserSession {
-  user: User;
+  user: User | null; // Permitir null para estado inicial
   selectedBrokerage: Brokerage | null;
   availableBrokerages: Brokerage[];
   lastTransaction: {

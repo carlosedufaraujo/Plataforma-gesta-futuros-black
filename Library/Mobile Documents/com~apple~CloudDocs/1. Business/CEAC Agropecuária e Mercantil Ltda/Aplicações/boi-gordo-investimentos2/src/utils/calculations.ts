@@ -1,208 +1,281 @@
-import { Position, PositionDirection, CONTRACT_SIZES } from '@/types';
+/**
+ * Funções de cálculo para análises financeiras
+ */
 
-export interface PnLCalculation {
-  pnl: number;
-  pnl_percentage: number;
-  total_quantity: number;
-  exposure: number;
-  price_diff: number;
-}
+import { Position, Transaction, Option } from '@/types';
 
 /**
- * Calcula P&L de uma posição EXATAMENTE como no HTML original
- * LONG (Compra): Ganha quando o preço SOBE, perde quando CAI
- * SHORT (Venda): Ganha quando o preço CAI, perde quando SOBE
+ * Calcula o P&L total baseado nas posições
  */
-export const calculatePositionPnL = (position: {
-  direction: PositionDirection;
-  quantity: number;
-  entry_price: number;
-  current_price: number;
-  contract_size: number;
-}): PnLCalculation => {
-  const { direction, quantity, entry_price, current_price, contract_size } = position;
+export const calculateTotalPnL = (positions: Position[]): number => {
+  return positions.reduce((total, position) => {
+    const realizedPnL = position.realized_pnl || 0;
+    const unrealizedPnL = position.unrealized_pnl || 0;
+    return total + realizedPnL + unrealizedPnL;
+  }, 0);
+};
+
+/**
+ * Calcula o P&L diário baseado nas transações do dia atual
+ */
+export const calculateDailyPnL = (transactions: Transaction[]): number => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   
-  // Quantidade total (contratos * tamanho)
-  const totalQuantity = quantity * contract_size;
+  return transactions
+    .filter(transaction => {
+      const transactionDate = new Date(transaction.createdAt);
+      transactionDate.setHours(0, 0, 0, 0);
+      return transactionDate.getTime() === today.getTime();
+    })
+    .reduce((total, transaction) => {
+      // Simplificação: considerar diferença entre compra e venda
+      if (transaction.type === 'VENDA') {
+        return total + (transaction.total * 0.05); // 5% de exemplo
+      } else if (transaction.type === 'COMPRA') {
+        return total - (transaction.total * 0.02); // 2% de custo
+      }
+      return total;
+    }, 0);
+};
+
+/**
+ * Calcula métricas de performance baseadas nas posições
+ */
+export const calculatePerformanceMetrics = (
+  positions: Position[], 
+  initialCapital: number = 200000
+) => {
+  const totalPnL = calculateTotalPnL(positions);
+  const currentCapital = initialCapital + totalPnL;
+  const roi = initialCapital > 0 ? (totalPnL / initialCapital) * 100 : 0;
   
-  // Diferença de preço
-  const priceDiff = current_price - entry_price;
+  const openPositions = positions.filter(pos => pos.status === 'OPEN');
+  const closedPositions = positions.filter(pos => pos.status === 'CLOSED');
   
-  // P&L baseado na direção - REPLICANDO LÓGICA EXATA DO HTML
-  let pnl = 0;
-  if (direction === 'LONG') {
-    // LONG: P&L = (Preço Atual - Preço Entrada) * Quantidade Total
-    pnl = priceDiff * totalQuantity;
-  } else {
-    // SHORT: P&L = (Preço Entrada - Preço Atual) * Quantidade Total
-    // Ou seja: -(Preço Atual - Preço Entrada) * Quantidade Total
-    pnl = -priceDiff * totalQuantity;
-  }
+  const winningPositions = closedPositions.filter(pos => (pos.realized_pnl || 0) > 0);
+  const winRate = closedPositions.length > 0 ? (winningPositions.length / closedPositions.length) * 100 : 0;
   
-  // Exposição (valor nocional da posição)
-  const exposure = entry_price * totalQuantity;
-  
-  // P&L percentual
-  const pnl_percentage = exposure > 0 ? (pnl / exposure) * 100 : 0;
-  
+  const totalExposure = openPositions.reduce((total, position) => {
+    const contractSize = position.contract.startsWith('BGI') ? 330 : 450;
+    return total + (position.entryPrice * position.quantity * contractSize);
+  }, 0);
+
   return {
-    pnl,
-    pnl_percentage,
-    total_quantity: totalQuantity,
-    exposure,
-    price_diff: priceDiff
+    totalPnL,
+    currentCapital,
+    roi,
+    openPositions: openPositions.length,
+    closedPositions: closedPositions.length,
+    winRate,
+    totalExposure
   };
 };
 
 /**
- * Calcula preço alvo para determinado P&L
+ * Agrupa transações por mês para análise temporal
  */
-export const calculateTargetPrice = (position: {
-  direction: PositionDirection;
-  entry_price: number;
-  quantity: number;
-  contract_size: number;
-}, targetPnL: number): number => {
-  const { direction, entry_price, quantity, contract_size } = position;
-  const totalQuantity = quantity * contract_size;
-  
-  if (direction === 'LONG') {
-    // Para LONG: targetPrice = entryPrice + (targetPnL / totalQuantity)
-    return entry_price + (targetPnL / totalQuantity);
-  } else {
-    // Para SHORT: targetPrice = entryPrice - (targetPnL / totalQuantity)
-    return entry_price - (targetPnL / totalQuantity);
-  }
-};
+export const groupTransactionsByMonth = (transactions: Transaction[]) => {
+  const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+  const monthlyStats = {};
 
-/**
- * Formata valores monetários para exibição
- */
-export const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(value);
-};
+  transactions.forEach(transaction => {
+    const date = new Date(transaction.createdAt);
+    const monthIndex = date.getMonth();
+    const monthName = months[monthIndex];
 
-/**
- * Formata percentual para exibição
- */
-export const formatPercentage = (value: number): string => {
-  return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
-};
+    if (!monthlyStats[monthName]) {
+      monthlyStats[monthName] = {
+        month: monthName,
+        pnl: 0,
+        contracts: 0,
+        transactions: 0,
+        volume: 0
+      };
+    }
 
-/**
- * Formata números para exibição com separadores
- */
-export const formatNumber = (value: number, decimals: number = 2): string => {
-  return value.toLocaleString('pt-BR', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals
+    monthlyStats[monthName].contracts += transaction.quantity;
+    monthlyStats[monthName].transactions += 1;
+    monthlyStats[monthName].volume += transaction.total;
+
+    // Aproximação de P&L baseada no tipo de transação
+    if (transaction.type === 'VENDA') {
+      monthlyStats[monthName].pnl += transaction.total * 0.03; // 3% de ganho médio
+    } else if (transaction.type === 'COMPRA') {
+      monthlyStats[monthName].pnl -= transaction.fees; // Deduzir custos
+    }
   });
-};
 
-/**
- * Calcula payoff de opção (para o gráfico)
- */
-export const calculateOptionPayoff = (
-  optionType: 'CALL' | 'PUT',
-  strikePrice: number,
-  premium: number,
-  underlyingPrice: number,
-  isPurchased: boolean,
-  contractSize: number = 330
-): number => {
-  let intrinsicValue = 0;
-  
-  if (optionType === 'CALL') {
-    intrinsicValue = Math.max(underlyingPrice - strikePrice, 0);
-  } else {
-    intrinsicValue = Math.max(strikePrice - underlyingPrice, 0);
-  }
-  
-  const payoff = isPurchased 
-    ? (intrinsicValue - premium) * contractSize
-    : (premium - intrinsicValue) * contractSize;
-  
-  return payoff;
-};
-
-/**
- * Gera dados de payoff para gráfico (como no HTML original)
- */
-export const generatePayoffData = (
-  optionType: 'CALL' | 'PUT',
-  strikePrice: number,
-  premium: number,
-  isPurchased: boolean,
-  contractSize: number = 330,
-  priceRange: { min: number; max: number; step: number } = { min: 300, max: 360, step: 2 }
-): Array<{ price: number; payoff: number }> => {
-  const data = [];
-  
-  for (let price = priceRange.min; price <= priceRange.max; price += priceRange.step) {
-    const payoff = calculateOptionPayoff(optionType, strikePrice, premium, price, isPurchased, contractSize);
-    data.push({ price, payoff });
-  }
-  
-  return data;
+  return months.map(month => 
+    monthlyStats[month] || { month, pnl: 0, contracts: 0, transactions: 0, volume: 0 }
+  );
 };
 
 /**
  * Calcula dados para o gráfico de evolução do capital
  */
-export const generateCapitalEvolutionData = () => {
-  return [
-    { label: 'Jan', value: 200000 },
-    { label: 'Fev', value: 195500 },
-    { label: 'Mar', value: 203700 },
-    { label: 'Abr', value: 208900 },
-    { label: 'Mai', value: 218000 },
-    { label: 'Jun', value: 235000 },
-    { label: 'Jul', value: 245780 }
-  ];
+export const generateCapitalEvolutionData = (
+  monthlyData: any[], 
+  initialCapital: number = 200000
+) => {
+  return monthlyData.map((month, index) => {
+    const accumulated = monthlyData.slice(0, index + 1).reduce((sum, m) => sum + m.pnl, 0);
+    return {
+      month: month.month,
+      capital: initialCapital + accumulated
+    };
+  });
 };
 
 /**
  * Calcula dados para o gráfico de P&L por contrato
  */
-export const generatePLByContractData = () => {
-  return [
-    { label: 'BGI', value: 18500 },
-    { label: 'CCM', value: 12300 },
-    { label: 'ICF', value: -4200 },
-    { label: 'DOL', value: 8900 },
-    { label: 'IND', value: 10280 }
-  ];
+export const generatePLByContractData = (positions: Position[]) => {
+  if (!positions.length) {
+    return {
+      labels: ['Sem Dados'],
+      data: [0]
+    };
+  }
+
+  const contractStats = {};
+
+  positions.forEach(position => {
+    // Extrair símbolo do contrato (BGI, CCM, etc.)
+    const contractSymbol = position.contract.substring(0, 3);
+
+    if (!contractStats[contractSymbol]) {
+      contractStats[contractSymbol] = 0;
+    }
+
+    // Somar P&L realizado e não realizado
+    if (position.realized_pnl) {
+      contractStats[contractSymbol] += position.realized_pnl;
+    }
+    if (position.unrealized_pnl) {
+      contractStats[contractSymbol] += position.unrealized_pnl;
+    }
+  });
+
+  return {
+    labels: Object.keys(contractStats),
+    data: Object.values(contractStats)
+  };
 };
 
 /**
- * Converte string de preço para número
+ * Calcula análise de performance por ativo
  */
-export const parsePrice = (priceStr: string): number => {
-  return parseFloat(priceStr.replace('R$', '').replace(/\./g, '').replace(',', '.')) || 0;
+export const analyzePerformanceByAsset = (positions: Position[]) => {
+  const assetStats = {};
+
+  positions.forEach(position => {
+    const asset = position.contract.startsWith('BGI') ? 'Boi Gordo' :
+                 position.contract.startsWith('CCM') ? 'Milho' :
+                 position.contract.startsWith('SFI') ? 'Soja' : 'Outros';
+
+    if (!assetStats[asset]) {
+      assetStats[asset] = {
+        asset,
+        contracts: 0,
+        result: 0,
+        exposure: 0,
+        trades: 0,
+        wins: 0
+      };
+    }
+
+    const contractSize = position.contract.startsWith('BGI') ? 330 : 450;
+    
+    assetStats[asset].contracts += position.quantity;
+    assetStats[asset].exposure += position.entryPrice * position.quantity * contractSize;
+    assetStats[asset].trades += 1;
+
+    const totalPnL = (position.realized_pnl || 0) + (position.unrealized_pnl || 0);
+    assetStats[asset].result += totalPnL;
+    
+    if (totalPnL > 0) {
+      assetStats[asset].wins += 1;
+    }
+  });
+
+  return Object.values(assetStats).map((asset: any) => ({
+    ...asset,
+    winRate: asset.trades > 0 ? (asset.wins / asset.trades) * 100 : 0,
+    avgResult: asset.trades > 0 ? asset.result / asset.trades : 0
+  }));
 };
 
 /**
- * Converte número para string de preço formatada
+ * Calcula métricas de risco
  */
-export const formatPriceInput = (value: number): string => {
-  return value.toFixed(2).replace('.', ',');
+export const calculateRiskMetrics = (positions: Position[]) => {
+  const openPositions = positions.filter(pos => pos.status === 'OPEN');
+  
+  const totalExposure = openPositions.reduce((total, position) => {
+    const contractSize = position.contract.startsWith('BGI') ? 330 : 450;
+    return total + (position.entryPrice * position.quantity * contractSize);
+  }, 0);
+
+  const maxSingleExposure = Math.max(...openPositions.map(position => {
+    const contractSize = position.contract.startsWith('BGI') ? 330 : 450;
+    return position.entryPrice * position.quantity * contractSize;
+  }), 0);
+
+  // Diversificação: número de ativos diferentes
+  const uniqueAssets = new Set(openPositions.map(pos => pos.contract.substring(0, 3)));
+  const diversification = uniqueAssets.size;
+
+  return {
+    totalExposure,
+    maxSingleExposure,
+    diversification,
+    concentrationRisk: totalExposure > 0 ? (maxSingleExposure / totalExposure) * 100 : 0
+  };
 };
 
-
-
 /**
- * Calcula margem necessária (simplificado - 10% da exposição)
+ * Calcula payoff de opções
  */
-export const calculateMarginRequired = (exposure: number): number => {
-  return exposure * 0.1; // 10% de margem
+export const calculateOptionPayoff = (
+  option: Option, 
+  spotPrices: number[]
+): { spotPrice: number; payoff: number }[] => {
+  return spotPrices.map(spotPrice => {
+    let intrinsicValue = 0;
+    
+    if (option.type === 'CALL') {
+      intrinsicValue = Math.max(0, spotPrice - option.strike);
+    } else {
+      intrinsicValue = Math.max(0, option.strike - spotPrice);
+    }
+    
+    const payoff = option.isPurchased 
+      ? (intrinsicValue - option.premium) * option.quantity
+      : (option.premium - intrinsicValue) * option.quantity;
+    
+    return { spotPrice, payoff };
+  });
 };
 
 /**
- * Calcula taxas de operação (0.1% padrão)
+ * Calcula breakeven de uma carteira de opções
  */
-export const calculateFees = (totalAmount: number): number => {
-  return totalAmount * 0.001; // 0.1% de taxa
+export const calculatePortfolioBreakeven = (options: Option[]): number[] => {
+  if (!options.length) return [];
+
+  // Simplificação: calcular breakeven baseado na opção com maior exposição
+  const mainOption = options.reduce((prev, current) => 
+    (prev.premium * prev.quantity > current.premium * current.quantity) ? prev : current
+  );
+
+  const totalPremium = options.reduce((sum, opt) => 
+    sum + (opt.isPurchased ? opt.premium : -opt.premium) * opt.quantity, 0
+  );
+
+  if (mainOption.type === 'CALL') {
+    return [mainOption.strike + Math.abs(totalPremium) / mainOption.quantity];
+  } else {
+    return [mainOption.strike - Math.abs(totalPremium) / mainOption.quantity];
+  }
 }; 

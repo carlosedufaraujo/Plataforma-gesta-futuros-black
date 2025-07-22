@@ -1,13 +1,30 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Brokerage, CurrentUserSession, Transaction } from '@/types';
+import { User, Brokerage } from '@/types';
+
+interface CurrentUserSession {
+  user: User | null;
+  selectedBrokerage: Brokerage | null;
+  availableBrokerages: Brokerage[];
+  lastTransaction: any | null;
+}
 
 interface UserContextType {
   currentSession: CurrentUserSession;
-  setSelectedBrokerage: (brokerage: Brokerage) => void;
-  updateLastTransaction: (transaction: Transaction) => void;
-  refreshUserData: () => void;
+  setCurrentUser: (user: User) => void;
+  setSelectedBrokerage: (brokerage: Brokerage | null) => void;
+  addBrokerage: (brokerage: Omit<Brokerage, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  updateBrokerage: (id: string, updates: Partial<Brokerage>) => void;
+  removeBrokerage: (id: string) => void;
+  updateSelectedBrokerage: (brokerage: Brokerage) => void;
+  
+  // Loading states
+  loading: boolean;
+  error: string | null;
+  
+  // Data fetching
+  fetchUserData: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -15,7 +32,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export const useUser = () => {
   const context = useContext(UserContext);
   if (!context) {
-    throw new Error('useUser deve ser usado dentro de um UserProvider');
+    throw new Error('useUser must be used within a UserProvider');
   }
   return context;
 };
@@ -25,26 +42,21 @@ interface UserProviderProps {
 }
 
 export const UserProvider = ({ children }: UserProviderProps) => {
-  const [currentSession, setCurrentSession] = useState<CurrentUserSession>({
-    user: {
-      id: 'user001',
-      nome: 'Carlos Eduardo',
-      cpf: '123.456.789-00',
-      endereco: 'Rua das Palmeiras, 123 - São Paulo, SP',
-      telefone: '(11) 99999-9999',
-      email: 'carlos.eduardo@email.com',
-      isActive: true,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-15T10:30:00Z',
-      brokerageIds: ['brok001', 'brok002', 'brok003']
-    },
-    selectedBrokerage: null,
-    availableBrokerages: [],
-    lastTransaction: null
-  });
+  // Dados temporários para desenvolvimento - REMOVER quando backend estiver pronto
+  const tempUser: User = {
+    id: '00000000-1111-2222-3333-444444444444',
+    nome: 'Carlos Eduardo Almeida',
+    cpf: '123.456.789-00',
+    endereco: 'Rua das Palmeiras, 123 - São Paulo, SP',
+    telefone: '(11) 99999-9999',
+    email: 'carlos.eduardo@ceacagro.com.br',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-15T10:30:00Z',
+    brokerageIds: ['brok001', 'brok002', 'brok003']
+  };
 
-  // Dados simulados de corretoras
-  const mockBrokerages: Brokerage[] = [
+  const tempBrokerages: Brokerage[] = [
     {
       id: 'brok001',
       nome: 'XP Investimentos',
@@ -60,7 +72,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       isActive: true,
       createdAt: '2024-01-01T00:00:00Z',
       updatedAt: '2024-01-10T14:20:00Z',
-      authorizedUserIds: ['user001', 'user002']
+      authorizedUserIds: ['00000000-1111-2222-3333-444444444444']
     },
     {
       id: 'brok002',  
@@ -77,181 +89,163 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       isActive: true,
       createdAt: '2024-01-02T00:00:00Z',
       updatedAt: '2024-01-12T09:15:00Z',
-      authorizedUserIds: ['user001', 'user003']
+      authorizedUserIds: ['00000000-1111-2222-3333-444444444444']
     },
     {
       id: 'brok003',
       nome: 'Clear Corretora',
-      cnpj: '09.274.232/0001-73',
-      endereco: 'Rua Olimpíadas, 205 - São Paulo, SP',
-      assessor: 'João Henrique',
-      telefone: '(11) 4040-2020',
-      email: 'atendimento@clear.com.br',
-      corretagemMilho: 1.95,
-      corretagemBoi: 2.75,
+      cnpj: '02.332.886/0011-11',
+      endereco: 'Av. Paulista, 1000 - São Paulo, SP',
+      assessor: 'João Santos',
+      telefone: '(11) 4000-4000',
+      email: 'contato@clear.com.br',
+      corretagemMilho: 2.20,
+      corretagemBoi: 2.90,
       taxas: 0.25,
-      impostos: 14.90,
+      impostos: 15.00,
       isActive: true,
       createdAt: '2024-01-03T00:00:00Z',
-      updatedAt: '2024-01-14T16:45:00Z',
-      authorizedUserIds: ['user001']
+      updatedAt: '2024-01-13T16:45:00Z',
+      authorizedUserIds: ['00000000-1111-2222-3333-444444444444']
     }
   ];
 
-  // Dados simulados da última transação
-  const mockLastTransaction = {
-    date: '2025-01-20T14:35:00Z',
-    type: 'COMPRA',
-    contract: 'BGIM25'
-  };
+  // Estado inicial com dados temporários
+  const [currentSession, setCurrentSession] = useState<CurrentUserSession>({
+    user: tempUser, // Usuário temporário para desenvolvimento
+    selectedBrokerage: null,
+    availableBrokerages: tempBrokerages, // Corretoras temporárias
+    lastTransaction: null
+  });
+  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Dados simulados de transações por corretora para o usuário atual
-  const mockTransactionsByBrokerage = {
-    'brok001': { // XP Investimentos
-      lastTransaction: {
-        date: '2025-01-20T16:42:15Z', // 3h atrás
-        type: 'VENDA',
-        contract: 'CCMJ25',
-        quantity: 200,
-        price: 1845.50,
-        userId: 'user001',
-        brokerageId: 'brok001'
-      },
-      totalTransactions: 45,
-      thisMonthCount: 12
-    },
-    'brok002': { // Rico Investimentos  
-      lastTransaction: {
-        date: '2025-01-20T11:28:30Z', // 8h atrás
-        type: 'COMPRA', 
-        contract: 'BGIK25',
-        quantity: 150,
-        price: 2125.80,
-        userId: 'user001',
-        brokerageId: 'brok002'
-      },
-      totalTransactions: 38,
-      thisMonthCount: 8
-    },
-    'brok003': { // Clear Corretora
-      lastTransaction: {
-        date: '2025-01-19T15:35:45Z', // 1 dia atrás
-        type: 'EXERCICIO',
-        contract: 'OPT BGI M400',
-        quantity: 100, 
-        price: 2400.00,
-        userId: 'user001',
-        brokerageId: 'brok003'
-      },
-      totalTransactions: 22,
-      thisMonthCount: 5
+  // Função para buscar dados do usuário do backend
+  const fetchUserData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // TODO: Implementar chamadas reais para API
+      // const userRes = await fetch('/api/auth/me');
+      // const brokeragesRes = await fetch('/api/brokerages');
+      
+      console.log('📡 Buscando dados do usuário...');
+      console.log('⚠️  Usando dados temporários para desenvolvimento');
+      
+      // Por enquanto, aguardar implementação do backend
+      // setCurrentSession({
+      //   user: await userRes.json(),
+      //   selectedBrokerage: null,
+      //   availableBrokerages: await brokeragesRes.json(),
+      //   lastTransaction: null
+      // });
+      
+    } catch (err) {
+      setError('Erro ao carregar dados do usuário');
+      console.error('❌ Erro ao buscar dados do usuário:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Função para obter última transação específica da corretora selecionada
-  const getLastTransactionForBrokerage = (brokerageId: string) => {
-    return mockTransactionsByBrokerage[brokerageId] || null;
-  };
-
-  // Filtrar corretoras disponíveis para o usuário atual
-  const getAvailableBrokerages = () => {
-    return mockBrokerages.filter(brokerage => 
-      currentSession.user.brokerageIds.includes(brokerage.id) && 
-      brokerage.authorizedUserIds.includes(currentSession.user.id)
-    );
-  };
-
-  // Inicializar dados na montagem do componente
+  // Carregar dados na inicialização
   useEffect(() => {
-    const availableBrokerages = getAvailableBrokerages();
-    const selectedBrokerage = availableBrokerages[0] || null;
-    
-    // Obter última transação da corretora selecionada
-    const lastTransactionData = selectedBrokerage 
-      ? getLastTransactionForBrokerage(selectedBrokerage.id)
-      : null;
-    
-    setCurrentSession(prev => ({
-      ...prev,
-      availableBrokerages,
-      selectedBrokerage,
-      lastTransaction: lastTransactionData ? {
-        date: lastTransactionData.lastTransaction.date,
-        type: lastTransactionData.lastTransaction.type,
-        contract: lastTransactionData.lastTransaction.contract
-      } : null
-    }));
+    fetchUserData();
   }, []);
 
-  const setSelectedBrokerage = (brokerage: Brokerage) => {
-    // Atualizar última transação baseada na corretora selecionada
-    const lastTransactionData = getLastTransactionForBrokerage(brokerage.id);
-    
+  const setCurrentUser = (user: User) => {
     setCurrentSession(prev => ({
       ...prev,
-      selectedBrokerage: brokerage,
-      lastTransaction: lastTransactionData ? {
-        date: lastTransactionData.lastTransaction.date,
-        type: lastTransactionData.lastTransaction.type,
-        contract: lastTransactionData.lastTransaction.contract
-      } : null
+      user
     }));
+    console.log('✅ Usuário definido:', user);
   };
 
-  const updateLastTransaction = (transaction: Transaction) => {
-    // Atualizar dados simulados da corretora
-    if (mockTransactionsByBrokerage[transaction.brokerageId]) {
-      mockTransactionsByBrokerage[transaction.brokerageId].lastTransaction = {
-        date: transaction.createdAt,
-        type: transaction.type,
-        contract: transaction.contract,
-        quantity: transaction.quantity,
-        price: transaction.price,
-        userId: transaction.userId,
-        brokerageId: transaction.brokerageId
-      };
-    }
-    
-    // Atualizar estado se for da corretora atualmente selecionada
-    if (currentSession.selectedBrokerage?.id === transaction.brokerageId) {
+  const setSelectedBrokerage = (brokerage: Brokerage | null) => {
+    setCurrentSession(prev => ({
+      ...prev,
+      selectedBrokerage: brokerage
+    }));
+    console.log('✅ Corretora selecionada:', brokerage?.nome || 'Nenhuma');
+  };
+
+  const addBrokerage = (brokerageData: Omit<Brokerage, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newBrokerage: Brokerage = {
+      ...brokerageData,
+      id: `brok_${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      authorizedUserIds: currentSession.user ? [currentSession.user.id] : []
+    };
+
+    setCurrentSession(prev => ({
+      ...prev,
+      availableBrokerages: [...prev.availableBrokerages, newBrokerage]
+    }));
+
+    // TODO: Salvar no backend
+    // await fetch('/api/brokerages', { method: 'POST', body: JSON.stringify(newBrokerage) });
+
+    console.log('✅ Nova corretora adicionada:', newBrokerage);
+  };
+
+  const updateBrokerage = (id: string, updates: Partial<Brokerage>) => {
+    setCurrentSession(prev => ({
+      ...prev,
+      availableBrokerages: prev.availableBrokerages.map(brok =>
+        brok.id === id ? { ...brok, ...updates, updatedAt: new Date().toISOString() } : brok
+      )
+    }));
+
+    // TODO: Atualizar no backend
+    // await fetch(`/api/brokerages/${id}`, { method: 'PUT', body: JSON.stringify(updates) });
+
+    console.log('✅ Corretora atualizada:', id, updates);
+  };
+
+  const removeBrokerage = (id: string) => {
+    setCurrentSession(prev => ({
+      ...prev,
+      availableBrokerages: prev.availableBrokerages.filter(brok => brok.id !== id),
+      selectedBrokerage: prev.selectedBrokerage?.id === id ? null : prev.selectedBrokerage
+    }));
+
+    // TODO: Remover do backend
+    // await fetch(`/api/brokerages/${id}`, { method: 'DELETE' });
+
+    console.log('✅ Corretora removida:', id);
+  };
+
+  const updateSelectedBrokerage = async (brokerage: Brokerage) => {
+    try {
+      // Aqui faria a chamada para o backend para salvar a seleção
+      // await api.post('/api/users/select-brokerage', { brokerageId: brokerage.id });
+      
       setCurrentSession(prev => ({
         ...prev,
-        lastTransaction: {
-          date: transaction.createdAt,
-          type: transaction.type,
-          contract: transaction.contract
-        }
+        selectedBrokerage: brokerage
       }));
+
+      console.log(`✅ Corretora ${brokerage.nome} selecionada!`);
+    } catch (error) {
+      console.error('Erro ao selecionar corretora:', error);
     }
-  };
-
-  const refreshUserData = () => {
-    const availableBrokerages = getAvailableBrokerages();
-    const selectedBrokerage = availableBrokerages.find(b => b.id === currentSession.selectedBrokerage?.id) || availableBrokerages[0] || null;
-    
-    // Atualizar última transação
-    const lastTransactionData = selectedBrokerage 
-      ? getLastTransactionForBrokerage(selectedBrokerage.id)
-      : null;
-
-    setCurrentSession(prev => ({
-      ...prev,
-      availableBrokerages,
-      selectedBrokerage,
-      lastTransaction: lastTransactionData ? {
-        date: lastTransactionData.lastTransaction.date,
-        type: lastTransactionData.lastTransaction.type,
-        contract: lastTransactionData.lastTransaction.contract
-      } : null
-    }));
   };
 
   return (
     <UserContext.Provider value={{
       currentSession,
+      setCurrentUser,
       setSelectedBrokerage,
-      updateLastTransaction,
-      refreshUserData
+      addBrokerage,
+      updateBrokerage,
+      removeBrokerage,
+      loading,
+      error,
+      fetchUserData,
+      updateSelectedBrokerage
     }}>
       {children}
     </UserContext.Provider>
