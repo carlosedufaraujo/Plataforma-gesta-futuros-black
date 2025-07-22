@@ -6497,3 +6497,135 @@ td[class*="actions"] .btn-sm,
   font-size: 12px;
   font-weight: 600;
 }
+
+/* ============================================
+   SELEÇÃO DE CORRETORAS NO CADASTRO DE USUÁRIO
+   ============================================ */
+
+/* Seção de corretoras */
+.brokerages-selection {
+  margin-top: 12px;
+}
+
+.brokerages-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.brokerage-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.brokerage-card:hover {
+  border-color: var(--color-info);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.brokerage-card.selected {
+  border-color: var(--color-success);
+  background: rgba(34, 197, 94, 0.1);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
+}
+
+.brokerage-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.brokerage-info strong {
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.brokerage-info small {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.selection-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.selection-indicator svg {
+  color: var(--color-success);
+}
+
+.empty-circle {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-color);
+  border-radius: 50%;
+  background: transparent;
+}
+
+.brokerage-card.selected .empty-circle {
+  border-color: var(--color-success);
+  background: var(--color-success);
+}
+
+/* Estado sem corretoras */
+.no-brokerages {
+  text-align: center;
+  padding: 40px 20px;
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+}
+
+.no-brokerages p {
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+/* Resumo de seleção */
+.selected-brokerages-summary {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 6px;
+}
+
+.selected-brokerages-summary small {
+  color: var(--color-success);
+  font-weight: 500;
+}
+
+/* Modal container grande */
+.modal-container.large {
+  max-width: 800px;
+  width: 90vw;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .brokerages-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .brokerage-card {
+    padding: 12px;
+  }
+  
+  .modal-container.large {
+    width: 95vw;
+    max-width: none;
+  }
+}

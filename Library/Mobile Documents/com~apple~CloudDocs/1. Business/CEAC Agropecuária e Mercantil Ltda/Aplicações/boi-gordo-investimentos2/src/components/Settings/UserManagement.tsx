@@ -9,27 +9,60 @@ interface User {
   address: string;
   phone: string;
   email: string;
+  corretoras: string[]; // IDs das corretoras vinculadas
+}
+
+interface Brokerage {
+  id: string;
+  name: string;
+  cnpj: string;
 }
 
 export default function UserManagement() {
+  // Lista de corretoras (mockado - viria do contexto/API)
+  const [brokerages] = useState<Brokerage[]>([
+    { id: '1', name: 'XP Investimentos', cnpj: '02.332.886/0001-04' },
+    { id: '2', name: 'Rico Investimentos', cnpj: '03.814.055/0001-74' },
+    { id: '3', name: 'Clear Corretora', cnpj: '01.234.567/0001-89' }
+  ]);
+
   const [users, setUsers] = useState<User[]>([
     {
       id: '1',
-      name: 'Carlos Eduardo Almeida',
+      name: 'João Silva',
       cpf: '123.456.789-00',
-      address: 'Rua das Palmeiras, 123 - São Paulo, SP',
+      address: 'Rua A, 123 - São Paulo, SP',
       phone: '(11) 99999-9999',
-      email: 'carlos@ceacagro.com.br'
+      email: 'joao@email.com',
+      corretoras: ['1', '2'] // XP e Rico
     },
     {
       id: '2',
-      name: 'Maria Silva Santos',
+      name: 'Maria Santos',
       cpf: '987.654.321-00',
-      address: 'Av. Brasil, 456 - Rio de Janeiro, RJ',
+      address: 'Av. B, 456 - Rio de Janeiro, RJ',
       phone: '(21) 88888-8888',
-      email: 'maria@email.com'
+      email: 'maria@email.com',
+      corretoras: ['1'] // Apenas XP
+    },
+    {
+      id: '3',
+      name: 'Pedro Costa',
+      cpf: '456.789.123-00',
+      address: 'Rua C, 789 - Belo Horizonte, MG',
+      phone: '(31) 77777-7777',
+      email: 'pedro@email.com',
+      corretoras: ['3'] // Apenas Clear
     }
   ]);
+
+  // Função para obter nomes das corretoras por IDs
+  const getBrokerageNames = (brokerageIds: string[]): string => {
+    return brokerageIds
+      .map(id => brokerages.find(b => b.id === id)?.name)
+      .filter(Boolean)
+      .join(', ');
+  };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -145,6 +178,7 @@ export default function UserManagement() {
               <th>Endereço</th>
               <th>Telefone</th>
               <th>Email</th>
+              <th>Corretoras</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -156,6 +190,7 @@ export default function UserManagement() {
                 <td>{user.address}</td>
                 <td>{user.phone}</td>
                 <td>{user.email}</td>
+                <td>{getBrokerageNames(user.corretoras)}</td>
                 <td>
                   <div className="action-buttons">
                     <button 
