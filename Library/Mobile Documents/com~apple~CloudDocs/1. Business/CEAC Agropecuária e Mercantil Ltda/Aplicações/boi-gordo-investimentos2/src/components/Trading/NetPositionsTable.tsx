@@ -78,12 +78,21 @@ export default function NetPositionsTable({
         className="btn btn-secondary btn-sm"
         onClick={() => onViewDetails?.(netPosition)}
       >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+        </svg>
         Detalhes
       </button>
       <button 
         className="btn btn-danger btn-sm"
         onClick={() => onPartialClose?.(netPosition, Math.abs(netPosition.net_quantity), netPosition.current_price)}
       >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
         Fechar
       </button>
     </div>

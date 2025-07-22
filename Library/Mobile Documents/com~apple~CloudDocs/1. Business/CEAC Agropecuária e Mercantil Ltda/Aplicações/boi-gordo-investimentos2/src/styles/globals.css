@@ -1701,15 +1701,18 @@ body {
 /* Action Buttons */
 .action-buttons {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   justify-content: center;
   flex-wrap: wrap;
 }
 
 .btn-sm {
-  padding: 6px 12px;
-  font-size: 12px;
+  padding: 4px 8px;
+  font-size: 11px;
   min-width: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* Botões Secondary (Editar) - COR AZUL PADRONIZADA */
@@ -4446,7 +4449,7 @@ tbody td {
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
-  gap: 4px !important;
+  gap: 2px !important;
 }
 
 /* REGRA 13: Centralização de badges e status */
@@ -4797,14 +4800,17 @@ th .btn,
 /* Enhanced Action Buttons para trading */
 .action-buttons {
   display: flex !important;
-  gap: 4px !important;
+  gap: 2px !important;
   justify-content: center !important;
   align-items: center !important;
 }
 
 .action-buttons .btn-sm {
-  padding: 4px 8px !important;
+  padding: 4px 6px !important;
   font-size: 11px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
 }
 
 /* Enhanced Data Table for Net Positions */
