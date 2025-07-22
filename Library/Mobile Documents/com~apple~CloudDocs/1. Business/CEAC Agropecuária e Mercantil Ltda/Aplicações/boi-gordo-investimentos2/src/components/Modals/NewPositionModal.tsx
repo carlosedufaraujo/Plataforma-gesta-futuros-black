@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Position } from '@/types';
 import { useExpirations } from '@/hooks/useExpirations';
 
@@ -15,6 +15,7 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
   const { activeExpirations } = useExpirations();
   
   const [formData, setFormData] = useState({
+    contractInput: editingPosition?.contract || '',
     contractType: editingPosition?.contract.slice(0, 3) || 'BGI',
     expiration: editingPosition?.contract.slice(3, 4) || '',
     direction: editingPosition?.direction || 'LONG' as 'LONG' | 'SHORT',
@@ -25,6 +26,10 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [contractInput, setContractInput] = useState(editingPosition?.contract || '');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Definir primeiro vencimento ativo como padrão
   useEffect(() => {
@@ -32,6 +37,81 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
       setFormData(prev => ({ ...prev, expiration: activeExpirations[0].code }));
     }
   }, [activeExpirations, formData.expiration]);
+
+  // Gerar lista de contratos disponíveis
+  const generateContractSuggestions = () => {
+    const contracts = [];
+    const contractTypes = [
+      { code: 'BGI', name: 'Boi Gordo' },
+      { code: 'CCM', name: 'Milho' }
+    ];
+
+    contractTypes.forEach(type => {
+      activeExpirations.forEach(exp => {
+        const contractCode = `${type.code}${exp.code}${exp.year.slice(-2)}`;
+        contracts.push(`${contractCode} - ${type.name} ${exp.month}/${exp.year}`);
+      });
+    });
+
+    return contracts;
+  };
+
+  // Filtrar sugestões baseado no input
+  const filterSuggestions = (input: string) => {
+    if (!input) return [];
+    
+    const allContracts = generateContractSuggestions();
+    return allContracts.filter(contract => 
+      contract.toLowerCase().includes(input.toLowerCase())
+    ).slice(0, 5); // Limitar a 5 sugestões
+  };
+
+  // Handler para mudanças no input do contrato
+  const handleContractInputChange = (value: string) => {
+    setContractInput(value);
+    
+    if (value.length > 0) {
+      const filtered = filterSuggestions(value);
+      setSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+      
+      // Auto-completar campos separados se o input for válido
+      const upperValue = value.toUpperCase();
+      if (upperValue.length >= 4) {
+        const contractType = upperValue.slice(0, 3);
+        const expiration = upperValue.slice(3, 4);
+        
+        if ((contractType === 'BGI' || contractType === 'CCM') && 
+            activeExpirations.some(exp => exp.code === expiration)) {
+          setFormData(prev => ({
+            ...prev,
+            contractType,
+            expiration
+          }));
+        }
+      }
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  // Selecionar sugestão
+  const selectSuggestion = (suggestion: string) => {
+    const contractCode = suggestion.split(' - ')[0];
+    setContractInput(contractCode);
+    
+    const contractType = contractCode.slice(0, 3);
+    const expiration = contractCode.slice(3, 4);
+    
+    setFormData(prev => ({
+      ...prev,
+      contractType,
+      expiration
+    }));
+    
+    setShowSuggestions(false);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,8 +127,8 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
       newErrors.price = 'Preço de entrada é obrigatório e deve ser maior que zero';
     }
     
-    if (!formData.expiration) {
-      newErrors.expiration = 'Vencimento é obrigatório';
+    if (!contractInput || contractInput.length < 4) {
+      newErrors.expiration = 'Contrato é obrigatório (ex: BGIK25)';
     }
 
     setErrors(newErrors);
@@ -57,9 +137,8 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
       return;
     }
 
-    // Construir código completo do contrato (BGI + K + 25)
-    const expiration = activeExpirations.find(exp => exp.code === formData.expiration);
-    const contractCode = `${formData.contractType}${formData.expiration}${expiration?.year.slice(-2) || '25'}`;
+    // Usar o código do contrato diretamente do input
+    const contractCode = contractInput.toUpperCase();
 
     const newPosition: Omit<Position, 'id'> = {
       contract: contractCode,
@@ -86,6 +165,9 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
       stopLoss: '',
       takeProfit: ''
     });
+    setContractInput('');
+    setSuggestions([]);
+    setShowSuggestions(false);
     setErrors({});
   };
 
@@ -127,41 +209,65 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
         
         <div className="modal-body">
           <form onSubmit={handleSubmit}>
-            {/* Primeira linha: Ativo e Vencimento */}
-            <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label required">Ativo</label>
-                <select 
-                  className="form-select"
-                  value={formData.contractType}
-                  onChange={(e) => handleInputChange('contractType', e.target.value)}
-                >
-                  <option value="BGI">BGI - Boi Gordo</option>
-                  <option value="CCM">CCM - Milho</option>
-                </select>
-              </div>
+            {/* Campo de Contrato com Autocomplete */}
+            <div className="form-group" style={{ position: 'relative' }}>
+              <label className="form-label required">Contrato</label>
+              <input
+                ref={inputRef}
+                type="text"
+                className={`form-input ${errors.expiration ? 'error' : ''}`}
+                value={contractInput}
+                onChange={(e) => handleContractInputChange(e.target.value)}
+                onFocus={() => contractInput && setShowSuggestions(suggestions.length > 0)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                placeholder="Digite BGI, CCM ou código completo (ex: BGIK25)"
+                autoComplete="off"
+              />
               
-              <div className="form-group">
-                <label className="form-label required">Vencimento</label>
-                <select 
-                  className={`form-select ${errors.expiration ? 'error' : ''}`}
-                  value={formData.expiration}
-                  onChange={(e) => handleInputChange('expiration', e.target.value)}
-                  disabled={activeExpirations.length === 0}
-                >
-                  <option value="">Selecione um vencimento</option>
-                  {activeExpirations.length === 0 ? (
-                    <option value="" disabled>Nenhum vencimento ativo - Configure em Configurações</option>
-                  ) : (
-                    activeExpirations.map(exp => (
-                      <option key={exp.id} value={exp.code}>
-                        {exp.code} - {exp.month}/{exp.year}
-                      </option>
-                    ))
-                  )}
-                </select>
-                {errors.expiration && <span className="error-message">{errors.expiration}</span>}
-              </div>
+              {showSuggestions && suggestions.length > 0 && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                  zIndex: 1000,
+                  maxHeight: '200px',
+                  overflowY: 'auto'
+                }}>
+                  {suggestions.map((suggestion, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        padding: '12px 16px',
+                        cursor: 'pointer',
+                        borderBottom: index < suggestions.length - 1 ? '1px solid var(--border-color)' : 'none',
+                        transition: 'background 0.2s ease'
+                      }}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => selectSuggestion(suggestion)}
+                      onMouseEnter={(e) => {
+                        (e.target as HTMLElement).style.background = 'var(--bg-hover)';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.target as HTMLElement).style.background = 'transparent';
+                      }}
+                    >
+                      <div style={{ fontWeight: '600', color: 'var(--text-bright)' }}>
+                        {suggestion.split(' - ')[0]}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                        {suggestion.split(' - ')[1]}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {errors.expiration && <span className="error-message">{errors.expiration}</span>}
             </div>
 
             {/* Segunda linha: Direção e Quantidade */}
