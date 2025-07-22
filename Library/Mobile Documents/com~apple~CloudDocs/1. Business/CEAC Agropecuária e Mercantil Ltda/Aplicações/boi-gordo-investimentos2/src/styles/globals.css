@@ -7236,3 +7236,167 @@ td[class*="actions"] .btn-sm,
     flex: 1;
   }
 }
+
+/* ============================================
+   FLOATING ACTION BUTTON (FAB)
+   ============================================ */
+
+.floating-action-button {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  background: var(--color-primary);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 8px 24px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  color: white;
+  overflow: visible;
+}
+
+.floating-action-button:hover {
+  background: var(--color-primary-dark, #1e40af);
+  transform: scale(1.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2), 0 12px 32px rgba(0, 0, 0, 0.15);
+}
+
+.floating-action-button:active {
+  transform: scale(0.95);
+  transition: transform 0.1s ease;
+}
+
+/* Ícone do FAB */
+.fab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.floating-action-button:hover .fab-icon {
+  transform: rotate(90deg);
+}
+
+/* Tooltip do FAB */
+.fab-tooltip {
+  position: absolute;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-right: 12px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  pointer-events: none;
+}
+
+.floating-action-button:hover .fab-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) translateX(-4px);
+}
+
+.tooltip-text {
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+}
+
+.tooltip-arrow {
+  position: absolute;
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid rgba(0, 0, 0, 0.8);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+
+/* Responsividade do FAB */
+@media (max-width: 768px) {
+  .floating-action-button {
+    bottom: 20px;
+    right: 20px;
+    width: 52px;
+    height: 52px;
+  }
+  
+  /* Esconder tooltip no mobile */
+  .fab-tooltip {
+    display: none;
+  }
+}
+
+/* Animação de entrada */
+@keyframes fabEnter {
+  0% {
+    transform: scale(0) rotate(180deg);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.floating-action-button {
+  animation: fabEnter 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Evitar conflito com elementos fixos */
+.floating-action-button {
+  z-index: 1001;
+}
+
+/* Ajuste quando sidebar está aberta em desktop */
+@media (min-width: 769px) {
+  .sidebar-open .floating-action-button {
+    right: calc(24px + 280px);
+    transition: right 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Cabeçalho da seção ativa */
+.section-header-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.section-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.section-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}

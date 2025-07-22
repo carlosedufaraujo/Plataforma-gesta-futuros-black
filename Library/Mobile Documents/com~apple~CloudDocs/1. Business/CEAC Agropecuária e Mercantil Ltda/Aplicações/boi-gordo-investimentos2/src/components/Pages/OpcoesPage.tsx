@@ -156,9 +156,12 @@ export default function OpcoesPage({ selectedPeriod }: OpcoesPageProps) {
 
       return (
         <div className="card">
-          <h2>Opções {tabs.find(t => t.id === activeTab)?.label}</h2>
-          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-            <p>{emptyMessages[activeTab as keyof typeof emptyMessages]}</p>
+          <div className="empty-state">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ margin: '0 auto 16px' }}>
+              <path d="M3 3v18h18"></path>
+              <path d="M7 12l4-4 4 4 6-6"></path>
+            </svg>
+            <h3>{emptyMessages[activeTab as keyof typeof emptyMessages]}</h3>
             {activeTab === 'ativas' && (
               <div className="empty-state-hint">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -179,14 +182,19 @@ export default function OpcoesPage({ selectedPeriod }: OpcoesPageProps) {
       if (activeOptions.length === 0) {
         return (
           <div className="card">
-            <h2>Análise de Payoff</h2>
-            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ margin: '0 auto 16px' }}>
+            <div className="empty-state">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ margin: '0 auto 16px' }}>
                 <path d="M3 3v18h18"></path>
                 <path d="M7 12l4-4 4 4 6-6"></path>
               </svg>
-              <p>📈 Nenhuma opção ativa para análise de payoff</p>
-              <p>💡 Clique em "Nova Opção" no cabeçalho para criar sua primeira opção</p>
+              <h3>Nenhuma opção ativa para análise de payoff</h3>
+              <div className="empty-state-hint">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M8 12l2 2 4-4"></path>
+                </svg>
+                <p>Clique em "Nova Opção" no cabeçalho para criar sua primeira opção</p>
+              </div>
             </div>
           </div>
         );
@@ -510,7 +518,6 @@ export default function OpcoesPage({ selectedPeriod }: OpcoesPageProps) {
 
     return (
       <div className="card">
-        <h2>Opções {tabs.find(t => t.id === activeTab)?.label} ({filteredOptions.length}) - {currentPeriodDescription}</h2>
         <DataTable
           headers={[
             'Símbolo',
@@ -573,7 +580,7 @@ export default function OpcoesPage({ selectedPeriod }: OpcoesPageProps) {
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '24px', color: 'var(--text-bright)' }}>
-            📊 Opções de Futuros
+            Opções de Futuros
           </h1>
           <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: '14px' }}>
             Gerenciamento de opções e estratégias de investimento
@@ -586,7 +593,10 @@ export default function OpcoesPage({ selectedPeriod }: OpcoesPageProps) {
             onClick={() => setShowStrategyModal(true)}
             style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
-            🎯 Estratégias
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+            </svg>
+            Estratégias
           </button>
           
           <button 
@@ -594,7 +604,11 @@ export default function OpcoesPage({ selectedPeriod }: OpcoesPageProps) {
             onClick={() => setShowNewOptionModal(true)}
             style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
-            ➕ Nova Opção
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Nova Opção
           </button>
         </div>
       </div>
@@ -630,11 +644,27 @@ export default function OpcoesPage({ selectedPeriod }: OpcoesPageProps) {
         </div>
       </div>
 
+      {/* Navegação de Abas */}
       <TabNavigation
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={(tab) => setActiveTab(tab as OptionTabType)}
       />
+
+      {/* Cabeçalho da Seção Ativa */}
+      {filteredOptions.length > 0 && activeTab !== 'payoff' && (
+        <div className="section-header-card">
+          <div className="section-info">
+            <h2 className="section-title">
+              {tabs.find(t => t.id === activeTab)?.icon}
+              Opções {tabs.find(t => t.id === activeTab)?.label}
+            </h2>
+            <p className="section-subtitle">
+              {filteredOptions.length} opção{filteredOptions.length !== 1 ? 'ões' : ''} • {currentPeriodDescription}
+            </p>
+          </div>
+        </div>
+      )}
 
       {renderTabContent()}
       
