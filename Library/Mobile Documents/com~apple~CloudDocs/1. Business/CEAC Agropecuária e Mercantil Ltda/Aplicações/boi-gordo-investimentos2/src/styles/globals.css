@@ -6358,3 +6358,142 @@ td[class*="actions"] .btn-sm,
     align-items: stretch;
   }
 }
+
+/* ============================================
+   ESTILOS PARA VINCULAÇÃO USUÁRIO-CORRETORA
+   ============================================ */
+
+/* Lista de usuários vinculados */
+.linked-users {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 200px;
+}
+
+.users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+}
+
+.user-name {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.no-users {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  text-align: center;
+}
+
+/* Botões extra pequenos */
+.btn-xs {
+  padding: 2px 6px !important;
+  font-size: 10px !important;
+  min-width: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 2px !important;
+}
+
+/* Modal de vinculação de usuários */
+.user-link-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.user-link-section h4 {
+  margin: 0 0 12px 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.available-users {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.user-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.user-card:hover {
+  border-color: var(--color-info);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-info strong {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.user-info small {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.no-available-users {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-secondary);
+}
+
+/* Usuários já vinculados */
+.linked-users-section {
+  border-top: 1px solid var(--border-color);
+  padding-top: 20px;
+}
+
+.linked-users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.linked-user-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--color-success);
+  border-radius: 6px;
+}
+
+.linked-badge {
+  color: var(--color-success);
+  font-size: 12px;
+  font-weight: 600;
+}

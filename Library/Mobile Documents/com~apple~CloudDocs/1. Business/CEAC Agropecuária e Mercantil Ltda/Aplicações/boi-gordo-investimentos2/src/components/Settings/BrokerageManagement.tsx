@@ -6,46 +6,64 @@ interface Brokerage {
   id: string;
   name: string;
   cnpj: string;
-  address: string;
   assessor: string;
   phone: string;
   email: string;
   milhoFees: number;
   boiFees: number;
-  taxRate?: number;
   taxes: number;
   otherFees: number;
+  linkedUsers?: User[];
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  cpf: string;
 }
 
 export default function BrokerageManagement() {
+  // Lista de usuários disponíveis no sistema
+  const [availableUsers] = useState<User[]>([
+    { id: '1', name: 'João Silva', email: 'joao@email.com', cpf: '123.456.789-00' },
+    { id: '2', name: 'Maria Santos', email: 'maria@email.com', cpf: '987.654.321-00' },
+    { id: '3', name: 'Pedro Costa', email: 'pedro@email.com', cpf: '456.789.123-00' }
+  ]);
+
   const [brokerages, setBrokerages] = useState<Brokerage[]>([
     {
       id: '1',
       name: 'XP Investimentos',
       cnpj: '02.332.886/0001-04',
-      address: 'Av. Brigadeiro Faria Lima, 3300 - São Paulo, SP',
       assessor: 'Roberto Silva',
       phone: '(11) 3003-3000',
       email: 'assessoria@xpi.com.br',
       milhoFees: 2.50,
       boiFees: 3.20,
       taxes: 0.35,
-      otherFees: 15.80
+      otherFees: 15.80,
+      linkedUsers: [
+        { id: '1', name: 'João Silva', email: 'joao@email.com', cpf: '123.456.789-00' }
+      ]
     },
     {
       id: '2',
       name: 'Rico Investimentos',
       cnpj: '03.814.055/0001-74',
-      address: 'Av. Paulista, 1450 - São Paulo, SP',
       assessor: 'Ana Paula Costa',
       phone: '(11) 2050-5000',
       email: 'suporte@rico.com.vc',
       milhoFees: 2.80,
       boiFees: 3.50,
       taxes: 0.28,
-      otherFees: 16.20
+      otherFees: 16.20,
+      linkedUsers: []
     }
   ]);
+
+  const [selectedBrokerageForUsers, setSelectedBrokerageForUsers] = useState<string | null>(null);
+  const [showUserLinkModal, setShowUserLinkModal] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBrokerage, setEditingBrokerage] = useState<Brokerage | null>(null);
@@ -148,6 +166,83 @@ export default function BrokerageManagement() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Função para vincular usuário à corretora
+  const linkUserToBrokerage = (brokerageId: string, userId: string) => {
+    const user = availableUsers.find(u => u.id === userId);
+    if (!user) return;
+
+    setBrokerages(prev => prev.map(brokerage => 
+      brokerage.id === brokerageId
+        ? { 
+            ...brokerage, 
+            linkedUsers: [...(brokerage.linkedUsers || []), user]
+          }
+        : brokerage
+    ));
+
+    // Feedback visual
+    const toast = document.createElement('div');
+    toast.textContent = `✅ Usuário ${user.name} vinculado à ${brokerages.find(b => b.id === brokerageId)?.name}`;
+    toast.style.cssText = `
+      position: fixed; top: 70px; right: 20px; z-index: 10002;
+      background: var(--color-success); color: white; padding: 12px 20px;
+      border-radius: 8px; font-weight: 500; animation: slideIn 0.3s ease-out;
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.animation = 'fadeOut 0.3s ease-out';
+      setTimeout(() => document.body.removeChild(toast), 300);
+    }, 3000);
+  };
+
+  // Função para desvincular usuário da corretora
+  const unlinkUserFromBrokerage = (brokerageId: string, userId: string) => {
+    const brokerage = brokerages.find(b => b.id === brokerageId);
+    const user = brokerage?.linkedUsers?.find(u => u.id === userId);
+    
+    if (!user || !brokerage) return;
+
+    if (confirm(`Deseja desvincular ${user.name} da corretora ${brokerage.name}?\n\nEsta ação removerá o acesso do usuário aos dados desta corretora.`)) {
+      setBrokerages(prev => prev.map(b => 
+        b.id === brokerageId
+          ? { 
+              ...b, 
+              linkedUsers: b.linkedUsers?.filter(u => u.id !== userId) || []
+            }
+          : b
+      ));
+
+      // Feedback visual
+      const toast = document.createElement('div');
+      toast.textContent = `✅ Usuário ${user.name} desvinculado da ${brokerage.name}`;
+      toast.style.cssText = `
+        position: fixed; top: 70px; right: 20px; z-index: 10002;
+        background: var(--color-warning); color: white; padding: 12px 20px;
+        border-radius: 8px; font-weight: 500; animation: slideIn 0.3s ease-out;
+      `;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 3000);
+    }
+  };
+
+  // Função para abrir modal de vinculação de usuários
+  const openUserLinkModal = (brokerageId: string) => {
+    setSelectedBrokerageForUsers(brokerageId);
+    setShowUserLinkModal(true);
+  };
+
+  // Obter usuários disponíveis para vincular (que não estão já vinculados à corretora)
+  const getAvailableUsersForBrokerage = (brokerageId: string) => {
+    const brokerage = brokerages.find(b => b.id === brokerageId);
+    const linkedUserIds = brokerage?.linkedUsers?.map(u => u.id) || [];
+    return availableUsers.filter(user => !linkedUserIds.includes(user.id));
+  };
+
   return (
     <div className="card">
       <div className="settings-header">
@@ -177,29 +272,91 @@ export default function BrokerageManagement() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Nome</th>
+              <th>Corretora</th>
               <th>Assessor</th>
               <th>Contato</th>
-              <th>Corretagem Milho</th>
-              <th>Corretagem Boi</th>
-              <th>Taxas (%)</th>
+              <th>Usuários Vinculados</th>
+              <th>Taxas</th>
               <th>Ações</th>
             </tr>
           </thead>
           <tbody>
             {brokerages.map(brokerage => (
               <tr key={brokerage.id}>
-                <td><strong>{brokerage.name}</strong></td>
-                <td>{brokerage.advisor}</td>
                 <td>
-                  <div style={{ fontSize: '12px' }}>
-                    <div>{brokerage.phone}</div>
-                    <div>{brokerage.email}</div>
+                  <div>
+                    <strong>{brokerage.name}</strong><br/>
+                    <small style={{ color: 'var(--text-secondary)' }}>
+                      CNPJ: {brokerage.cnpj}
+                    </small>
                   </div>
                 </td>
-                <td>R$ {(brokerage.milhoFees || 0).toFixed(2)}</td>
-                <td>R$ {(brokerage.boiFees || 0).toFixed(2)}</td>
-                <td>{(brokerage.taxes || 0).toFixed(2)}%</td>
+                <td>
+                  <div>
+                    <strong>{brokerage.assessor}</strong><br/>
+                    <small style={{ color: 'var(--text-secondary)' }}>
+                      {brokerage.email}
+                    </small>
+                  </div>
+                </td>
+                <td>{brokerage.phone}</td>
+                <td>
+                  <div className="linked-users">
+                    {brokerage.linkedUsers && brokerage.linkedUsers.length > 0 ? (
+                      <div className="users-list">
+                        {brokerage.linkedUsers.map(user => (
+                          <div key={user.id} className="user-item">
+                            <span className="user-name">{user.name}</span>
+                            <button 
+                              className="btn btn-danger btn-xs"
+                              onClick={() => unlinkUserFromBrokerage(brokerage.id, user.id)}
+                              title="Desvincular usuário"
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                        <button 
+                          className="btn btn-success btn-xs"
+                          onClick={() => openUserLinkModal(brokerage.id)}
+                          title="Vincular mais usuários"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                          </svg>
+                          Adicionar
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="no-users">
+                        <span style={{ color: 'var(--text-secondary)' }}>Nenhum usuário</span>
+                        <button 
+                          className="btn btn-primary btn-xs"
+                          onClick={() => openUserLinkModal(brokerage.id)}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                          </svg>
+                          Vincular
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td>
+                  <div style={{ fontSize: '12px' }}>
+                    <div>Milho: R$ {brokerage.milhoFees.toFixed(2)}</div>
+                    <div>Boi: R$ {brokerage.boiFees.toFixed(2)}</div>
+                    <div>Outras: R$ {brokerage.otherFees.toFixed(2)}</div>
+                  </div>
+                </td>
                 <td>
                   <div className="action-buttons">
                     <button 
@@ -385,6 +542,95 @@ export default function BrokerageManagement() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para vincular usuários */}
+      {showUserLinkModal && selectedBrokerageForUsers && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <div className="modal-header">
+              <h3 className="modal-title">
+                Vincular Usuários - {brokerages.find(b => b.id === selectedBrokerageForUsers)?.name}
+              </h3>
+              <button 
+                className="modal-close" 
+                onClick={() => {
+                  setShowUserLinkModal(false);
+                  setSelectedBrokerageForUsers(null);
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="user-link-section">
+                <h4>Usuários Disponíveis</h4>
+                <div className="available-users">
+                  {getAvailableUsersForBrokerage(selectedBrokerageForUsers).length > 0 ? (
+                    getAvailableUsersForBrokerage(selectedBrokerageForUsers).map(user => (
+                      <div key={user.id} className="user-card">
+                        <div className="user-info">
+                          <strong>{user.name}</strong>
+                          <small>{user.email}</small>
+                          <small>CPF: {user.cpf}</small>
+                        </div>
+                        <button 
+                          className="btn btn-primary btn-sm"
+                          onClick={() => {
+                            linkUserToBrokerage(selectedBrokerageForUsers, user.id);
+                            setShowUserLinkModal(false);
+                            setSelectedBrokerageForUsers(null);
+                          }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                          </svg>
+                          Vincular
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="no-available-users">
+                      <p>Todos os usuários já estão vinculados a esta corretora.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Usuários já vinculados */}
+                <div className="linked-users-section">
+                  <h4>Usuários Vinculados</h4>
+                  <div className="linked-users-list">
+                    {brokerages.find(b => b.id === selectedBrokerageForUsers)?.linkedUsers?.map(user => (
+                      <div key={user.id} className="linked-user-card">
+                        <div className="user-info">
+                          <strong>{user.name}</strong>
+                          <small>{user.email}</small>
+                        </div>
+                        <span className="linked-badge">✅ Vinculado</span>
+                      </div>
+                    )) || <p>Nenhum usuário vinculado ainda.</p>}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button 
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowUserLinkModal(false);
+                  setSelectedBrokerageForUsers(null);
+                }}
+              >
+                Fechar
+              </button>
             </div>
           </div>
         </div>

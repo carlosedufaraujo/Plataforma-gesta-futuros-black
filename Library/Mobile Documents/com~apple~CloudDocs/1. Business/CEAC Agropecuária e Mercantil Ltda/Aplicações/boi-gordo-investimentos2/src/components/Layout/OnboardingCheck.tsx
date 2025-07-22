@@ -5,6 +5,13 @@ import { useUser } from '@/contexts/UserContext';
 import BrokerageSetupModal from '@/components/Modals/BrokerageSetupModal';
 
 export default function OnboardingCheck() {
+  // SISTEMA DESABILITADO - Conforme solicitação do usuário
+  // O onboarding obrigatório a cada refresh foi removido
+  // Agora o vínculo usuário-corretora é feito na página de configurações
+  
+  return null;
+
+  /* CÓDIGO ANTERIOR DESABILITADO:
   const { currentSession } = useUser();
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -28,4 +35,5 @@ export default function OnboardingCheck() {
       isFirstSetup={true}
     />
   );
+  */
 } 
