@@ -11,39 +11,61 @@ interface NewPositionModalProps {
   editingPosition?: Position | null;
 }
 
+interface PositionItem {
+  id: string;
+  contractInput: string;
+  contractType: string;
+  expiration: string;
+  direction: 'LONG' | 'SHORT';
+  quantity: string;
+  price: string;
+  stopLoss: string;
+  takeProfit: string;
+}
+
 export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPosition }: NewPositionModalProps) {
   const { activeExpirations } = useExpirations();
   
-  const [formData, setFormData] = useState({
-    contractInput: editingPosition?.contract || '',
-    contractType: editingPosition?.contract.slice(0, 3) || 'BGI',
-    expiration: editingPosition?.contract.slice(3, 4) || '',
-    direction: editingPosition?.direction || 'LONG' as 'LONG' | 'SHORT',
-    quantity: editingPosition?.quantity.toString() || '',
-    price: editingPosition?.entryPrice.toString() || '',
-    stopLoss: editingPosition?.stopLoss?.toString() || '',
-    takeProfit: editingPosition?.takeProfit?.toString() || ''
-  });
+  // Data atual formatada para input date
+  const getCurrentDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+
+  const [selectedDate, setSelectedDate] = useState(getCurrentDate());
+  const [positions, setPositions] = useState<PositionItem[]>([
+    {
+      id: '1',
+      contractInput: editingPosition?.contract || '',
+      contractType: editingPosition?.contract.slice(0, 3) || 'BGI',
+      expiration: editingPosition?.contract.slice(3, 4) || '',
+      direction: editingPosition?.direction || 'LONG',
+      quantity: editingPosition?.quantity.toString() || '',
+      price: editingPosition?.entryPrice.toString() || '',
+      stopLoss: editingPosition?.stopLoss?.toString() || '',
+      takeProfit: editingPosition?.takeProfit?.toString() || ''
+    }
+  ]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [contractInput, setContractInput] = useState(editingPosition?.contract || '');
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<number>(-1);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Definir primeiro vencimento ativo como padrão
   useEffect(() => {
-    if (activeExpirations.length > 0 && !formData.expiration) {
-      setFormData(prev => ({ ...prev, expiration: activeExpirations[0].code }));
+    if (activeExpirations.length > 0 && !positions[0].expiration) {
+      setPositions(prev => prev.map(pos => ({ ...pos, expiration: activeExpirations[0].code })));
     }
-  }, [activeExpirations, formData.expiration]);
+  }, [activeExpirations, positions]);
 
   // Sincronizar contractInput quando editingPosition mudar
   useEffect(() => {
     if (editingPosition) {
-      setContractInput(editingPosition.contract);
-      setFormData(prev => ({
-        ...prev,
+      setPositions(prev => prev.map(pos => ({
+        ...pos,
+        contractInput: editingPosition.contract,
         contractType: editingPosition.contract.slice(0, 3),
         expiration: editingPosition.contract.slice(3, 4),
         direction: editingPosition.direction,
@@ -51,9 +73,45 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
         price: editingPosition.entryPrice.toString(),
         stopLoss: editingPosition.stopLoss?.toString() || '',
         takeProfit: editingPosition.takeProfit?.toString() || ''
-      }));
+      })));
     }
   }, [editingPosition]);
+
+  // Função para adicionar nova posição à lista
+  const addNewPosition = () => {
+    const newId = (positions.length + 1).toString();
+    const newPosition: PositionItem = {
+      id: newId,
+      contractInput: '',
+      contractType: 'BGI',
+      expiration: activeExpirations.length > 0 ? activeExpirations[0].code : '',
+      direction: 'LONG',
+      quantity: '',
+      price: '',
+      stopLoss: '',
+      takeProfit: ''
+    };
+    setPositions(prev => [...prev, newPosition]);
+  };
+
+  // Função para remover posição da lista
+  const removePosition = (id: string) => {
+    if (positions.length > 1) {
+      setPositions(prev => prev.filter(pos => pos.id !== id));
+    }
+  };
+
+  // Função para atualizar posição específica
+  const updatePosition = (id: string, field: string, value: string) => {
+    setPositions(prev => prev.map(pos => 
+      pos.id === id ? { ...pos, [field]: value } : pos
+    ));
+    
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
 
   // Gerar lista de contratos disponíveis
   const generateContractSuggestions = () => {
@@ -84,27 +142,24 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
   };
 
   // Handler para mudanças no input do contrato
-  const handleContractInputChange = (value: string) => {
-    setContractInput(value);
+  const handleContractInputChange = (id: string, value: string) => {
+    updatePosition(id, 'contractInput', value);
     
     if (value.length > 0) {
       const filtered = filterSuggestions(value);
       setSuggestions(filtered);
       setShowSuggestions(filtered.length > 0);
+      setActiveSuggestionIndex(-1);
       
-      // Auto-completar campos separados se o input for válido
-      const upperValue = value.toUpperCase();
-      if (upperValue.length >= 4) {
-        const contractType = upperValue.slice(0, 3);
-        const expiration = upperValue.slice(3, 4);
+      // Auto-parse se o formato estiver correto (ex: BGIK25)
+      if (value.length >= 4) {
+        const contractType = value.slice(0, 3).toUpperCase();
+        const expiration = value.slice(3, 4).toUpperCase();
         
         if ((contractType === 'BGI' || contractType === 'CCM') && 
             activeExpirations.some(exp => exp.code === expiration)) {
-          setFormData(prev => ({
-            ...prev,
-            contractType,
-            expiration
-          }));
+          updatePosition(id, 'contractType', contractType);
+          updatePosition(id, 'expiration', expiration);
         }
       }
     } else {
@@ -113,21 +168,18 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
     }
   };
 
-  // Selecionar sugestão
-  const selectSuggestion = (suggestion: string) => {
+  const selectSuggestion = (id: string, suggestion: string) => {
     const contractCode = suggestion.split(' - ')[0];
-    setContractInput(contractCode);
+    updatePosition(id, 'contractInput', contractCode);
     
     const contractType = contractCode.slice(0, 3);
     const expiration = contractCode.slice(3, 4);
     
-    setFormData(prev => ({
-      ...prev,
-      contractType,
-      expiration
-    }));
+    updatePosition(id, 'contractType', contractType);
+    updatePosition(id, 'expiration', expiration);
     
     setShowSuggestions(false);
+    setActiveSuggestionIndex(-1);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -136,15 +188,15 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
     // Validação
     const newErrors: Record<string, string> = {};
     
-    if (!formData.quantity || parseInt(formData.quantity) <= 0) {
+    if (!positions[0].quantity || parseInt(positions[0].quantity) <= 0) {
       newErrors.quantity = 'Quantidade é obrigatória e deve ser maior que zero';
     }
     
-    if (!formData.price || parseFloat(formData.price) <= 0) {
+    if (!positions[0].price || parseFloat(positions[0].price) <= 0) {
       newErrors.price = 'Preço de entrada é obrigatório e deve ser maior que zero';
     }
     
-    if (!contractInput || contractInput.length < 4) {
+    if (!positions[0].contractInput || positions[0].contractInput.length < 4) {
       newErrors.expiration = 'Contrato é obrigatório (ex: BGIK25)';
     }
 
@@ -155,16 +207,16 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
     }
 
     // Usar o código do contrato diretamente do input
-    const contractCode = contractInput.toUpperCase();
+    const contractCode = positions[0].contractInput.toUpperCase();
 
     const newPosition: Omit<Position, 'id'> = {
       contract: contractCode,
-      direction: formData.direction,
-      quantity: parseInt(formData.quantity),
-      entryPrice: parseFloat(formData.price.replace('R$ ', '').replace('.', '').replace(',', '.')),
-      currentPrice: parseFloat(formData.price.replace('R$ ', '').replace('.', '').replace(',', '.')),
-      stopLoss: formData.stopLoss ? parseFloat(formData.stopLoss.replace('R$ ', '').replace('.', '').replace(',', '.')) : undefined,
-      takeProfit: formData.takeProfit ? parseFloat(formData.takeProfit.replace('R$ ', '').replace('.', '').replace(',', '.')) : undefined,
+      direction: positions[0].direction,
+      quantity: parseInt(positions[0].quantity),
+      entryPrice: parseFloat(positions[0].price.replace('R$ ', '').replace('.', '').replace(',', '.')),
+      currentPrice: parseFloat(positions[0].price.replace('R$ ', '').replace('.', '').replace(',', '.')),
+      stopLoss: positions[0].stopLoss ? parseFloat(positions[0].stopLoss.replace('R$ ', '').replace('.', '').replace(',', '.')) : undefined,
+      takeProfit: positions[0].takeProfit ? parseFloat(positions[0].takeProfit.replace('R$ ', '').replace('.', '').replace(',', '.')) : undefined,
       status: 'OPEN',
       openDate: new Date().toISOString(),
     };
@@ -173,7 +225,9 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
     onClose();
     
     // Reset form
-    setFormData({
+    setPositions([{
+      id: '1',
+      contractInput: activeExpirations.length > 0 ? activeExpirations[0].code : '',
       contractType: 'BGI',
       expiration: activeExpirations.length > 0 ? activeExpirations[0].code : '',
       direction: 'LONG',
@@ -181,7 +235,7 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
       price: '',
       stopLoss: '',
       takeProfit: ''
-    });
+    }]);
     setContractInput('');
     setSuggestions([]);
     setShowSuggestions(false);
@@ -189,10 +243,10 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
+    setPositions(prev => prev.map(pos => ({
+      ...pos,
       [field]: value
-    }));
+    })));
     
     // Clear error when user starts typing
     if (errors[field]) {
@@ -208,149 +262,168 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
   }
 
   return (
-    <div className="modal-overlay">
-      <div className="modal">
+    <div className={`modal-overlay ${isOpen ? 'active' : ''}`}>
+      <div className="modal-container">
         <div className="modal-header">
-          <h3>{editingPosition ? 'Editar Posição' : 'Nova Posição'}</h3>
-          <button 
-            className="modal-close"
-            onClick={onClose}
-            type="button"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
+          <h2 className="modal-title">
+            {editingPosition ? 'Editar Posição' : 'Nova Posição'}
+          </h2>
+          <button className="modal-close" onClick={onClose}>×</button>
         </div>
-        
+
         <div className="modal-body">
           <form onSubmit={handleSubmit}>
-            {/* Campo de Contrato com Autocomplete */}
-            <div className="form-group" style={{ position: 'relative' }}>
-              <label className="form-label required">Contrato</label>
-              <input
-                ref={inputRef}
-                type="text"
-                className={`form-input ${errors.expiration ? 'error' : ''}`}
-                value={contractInput}
-                onChange={(e) => handleContractInputChange(e.target.value)}
-                onFocus={() => contractInput && setShowSuggestions(suggestions.length > 0)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                placeholder="Digite BGI, CCM ou código completo (ex: BGIK25)"
-                autoComplete="off"
-              />
-              
-              {showSuggestions && suggestions.length > 0 && (
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  background: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                  zIndex: 1000,
-                  maxHeight: '200px',
-                  overflowY: 'auto'
-                }}>
-                  {suggestions.map((suggestion, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        padding: '12px 16px',
-                        cursor: 'pointer',
-                        borderBottom: index < suggestions.length - 1 ? '1px solid var(--border-color)' : 'none',
-                        transition: 'background 0.2s ease'
-                      }}
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => selectSuggestion(suggestion)}
-                      onMouseEnter={(e) => {
-                        (e.target as HTMLElement).style.background = 'var(--bg-hover)';
-                      }}
-                      onMouseLeave={(e) => {
-                        (e.target as HTMLElement).style.background = 'transparent';
-                      }}
-                    >
-                      <div style={{ fontWeight: '600', color: 'var(--text-bright)' }}>
-                        {suggestion.split(' - ')[0]}
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                        {suggestion.split(' - ')[1]}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {errors.expiration && <span className="error-message">{errors.expiration}</span>}
+            {/* Campo de Data */}
+            <div className="form-section">
+              <h3 className="form-section-title">📅 Data da Operação</h3>
+              <div className="form-group">
+                <label className="form-label">Data</label>
+                <input 
+                  type="date" 
+                  className="form-input"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                />
+                <small className="form-hint">
+                  Data padrão: hoje ({new Date().toLocaleDateString('pt-BR')})
+                </small>
+              </div>
             </div>
 
-            {/* Segunda linha: Direção e Quantidade */}
-            <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label required">Direção</label>
-                <select 
-                  className="form-select"
-                  value={formData.direction}
-                  onChange={(e) => handleInputChange('direction', e.target.value)}
+            {/* Lista de Posições */}
+            <div className="form-section">
+              <div className="form-section-header">
+                <h3 className="form-section-title">📈 Posições ({positions.length})</h3>
+                <button 
+                  type="button" 
+                  className="btn btn-success btn-sm"
+                  onClick={addNewPosition}
                 >
-                  <option value="LONG">LONG (Compra)</option>
-                  <option value="SHORT">SHORT (Venda)</option>
-                </select>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg>
+                  Adicionar Posição
+                </button>
               </div>
-              
-              <div className="form-group">
-                <label className="form-label required">Quantidade</label>
-                <input 
-                  type="number" 
-                  className={`form-input ${errors.quantity ? 'error' : ''}`}
-                  value={formData.quantity}
-                  onChange={(e) => handleInputChange('quantity', e.target.value)}
-                  min="1"
-                  placeholder="Número de contratos"
-                />
-                {errors.quantity && <span className="error-message">{errors.quantity}</span>}
-              </div>
-            </div>
 
-            {/* Terceira linha: Preço de Entrada (largura completa) */}
-            <div className="form-group full-width">
-              <label className="form-label required">Preço de Entrada</label>
-              <input 
-                type="text" 
-                className={`form-input ${errors.price ? 'error' : ''}`}
-                value={formData.price}
-                onChange={(e) => handleInputChange('price', e.target.value)}
-                placeholder="Ex: 350,50"
-              />
-              {errors.price && <span className="error-message">{errors.price}</span>}
-            </div>
+              {positions.map((position, index) => (
+                <div key={position.id} className="position-item">
+                  <div className="position-header">
+                    <span className="position-number">Posição #{index + 1}</span>
+                    {positions.length > 1 && (
+                      <button 
+                        type="button" 
+                        className="btn btn-danger btn-sm"
+                        onClick={() => removePosition(position.id)}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3,6 5,6 21,6"></polyline>
+                          <path d="M19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
+                        </svg>
+                        Remover
+                      </button>
+                    )}
+                  </div>
 
-            {/* Quarta linha: Stop Loss e Take Profit (Opcionais) */}
-            <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">Stop Loss (Opcional)</label>
-                <input 
-                  type="text" 
-                  className="form-input"
-                  value={formData.stopLoss}
-                  onChange={(e) => handleInputChange('stopLoss', e.target.value)}
-                  placeholder="Ex: 320,00"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Take Profit (Opcional)</label>
-                <input 
-                  type="text" 
-                  className="form-input"
-                  value={formData.takeProfit}
-                  onChange={(e) => handleInputChange('takeProfit', e.target.value)}
-                  placeholder="Ex: 400,00"
-                />
-              </div>
+                  {/* Contrato com Autocomplete */}
+                  <div className="form-group">
+                    <label className="form-label">Contrato</label>
+                    <div className="autocomplete-container">
+                      <input 
+                        ref={inputRef}
+                        type="text"
+                        className={`form-input ${errors.expiration ? 'error' : ''}`}
+                        value={position.contractInput}
+                        onChange={(e) => handleContractInputChange(position.id, e.target.value)}
+                        onFocus={() => position.contractInput && setShowSuggestions(suggestions.length > 0)}
+                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                        placeholder="Digite BGI, CCM ou código completo (ex: BGIK25)"
+                      />
+                      
+                      {showSuggestions && suggestions.length > 0 && (
+                        <div className="autocomplete-suggestions">
+                          {suggestions.map((suggestion, idx) => (
+                            <div 
+                              key={idx}
+                              className={`suggestion-item ${idx === activeSuggestionIndex ? 'active' : ''}`}
+                              onClick={() => selectSuggestion(position.id, suggestion)}
+                            >
+                              {suggestion}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {errors.expiration && <span className="error-message">{errors.expiration}</span>}
+                  </div>
+
+                  {/* Direção, Quantidade e Preço */}
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label className="form-label">Direção</label>
+                      <select 
+                        className="form-select"
+                        value={position.direction}
+                        onChange={(e) => updatePosition(position.id, 'direction', e.target.value)}
+                      >
+                        <option value="LONG">LONG (Compra)</option>
+                        <option value="SHORT">SHORT (Venda)</option>
+                      </select>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Quantidade</label>
+                      <input 
+                        type="number" 
+                        className={`form-input ${errors.quantity ? 'error' : ''}`}
+                        value={position.quantity}
+                        onChange={(e) => updatePosition(position.id, 'quantity', e.target.value)}
+                        min="1"
+                        placeholder="Ex: 10"
+                      />
+                      {errors.quantity && <span className="error-message">{errors.quantity}</span>}
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Preço de Entrada</label>
+                      <input 
+                        type="text" 
+                        className={`form-input ${errors.price ? 'error' : ''}`}
+                        value={position.price}
+                        onChange={(e) => updatePosition(position.id, 'price', e.target.value)}
+                        placeholder="Ex: 350,50"
+                      />
+                      {errors.price && <span className="error-message">{errors.price}</span>}
+                    </div>
+                  </div>
+
+                  {/* Stop Loss e Take Profit */}
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label className="form-label">Stop Loss (Opcional)</label>
+                      <input 
+                        type="text" 
+                        className="form-input"
+                        value={position.stopLoss}
+                        onChange={(e) => updatePosition(position.id, 'stopLoss', e.target.value)}
+                        placeholder="Ex: 320,00"
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <label className="form-label">Take Profit (Opcional)</label>
+                      <input 
+                        type="text" 
+                        className="form-input"
+                        value={position.takeProfit}
+                        onChange={(e) => updatePosition(position.id, 'takeProfit', e.target.value)}
+                        placeholder="Ex: 400,00"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
 
             {/* Botões */}
@@ -366,7 +439,7 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
                 type="submit" 
                 className="btn btn-primary"
               >
-                {editingPosition ? 'Atualizar Posição' : 'Criar Posição'}
+                {editingPosition ? 'Atualizar Posição' : `Criar ${positions.length} Posição${positions.length > 1 ? 'ões' : ''}`}
               </button>
             </div>
           </form>
