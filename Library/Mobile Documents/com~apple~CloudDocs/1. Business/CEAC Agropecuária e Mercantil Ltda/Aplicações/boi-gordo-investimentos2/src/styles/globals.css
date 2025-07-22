@@ -1829,6 +1829,8 @@ td .btn-sm.btn-info {
   background: #0ea5e9 !important;
   border-color: #0ea5e9 !important;
   color: white !important;
+  border: 1px solid #0ea5e9 !important;
+  transition: all 0.2s ease !important;
 }
 
 .action-buttons .btn-sm.btn-info:hover,
