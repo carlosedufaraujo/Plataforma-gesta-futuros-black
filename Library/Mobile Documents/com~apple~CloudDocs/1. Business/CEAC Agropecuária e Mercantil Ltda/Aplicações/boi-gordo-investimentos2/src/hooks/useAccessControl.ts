@@ -28,63 +28,11 @@ export interface BrokerageAccess {
   }>;
 }
 
-// Dados mockados - em produção viria do backend
-const mockUsers: User[] = [
-  {
-    id: '1',
-    nome: 'Carlos Eduardo Almeida',
-    email: 'carlos@ceacagro.com.br',
-    cpf: '123.456.789-00',
-    telefone: '(11) 99999-9999',
-    endereco: 'Rua das Palmeiras, 123 - São Paulo, SP'
-  },
-  {
-    id: '2',
-    nome: 'Maria Silva Santos',
-    email: 'maria@email.com',
-    cpf: '987.654.321-00',
-    telefone: '(21) 88888-8888',
-    endereco: 'Av. Brasil, 456 - Rio de Janeiro, RJ'
-  },
-  {
-    id: '3',
-    nome: 'João Pedro Oliveira',
-    email: 'joao@empresa.com.br',
-    cpf: '456.789.123-00',
-    telefone: '(11) 77777-7777',
-    endereco: 'Rua Augusta, 789 - São Paulo, SP'
-  },
-  {
-    id: '4',
-    nome: 'Ana Carolina Costa',
-    email: 'ana@trading.com.br',
-    cpf: '321.654.987-00',
-    telefone: '(21) 66666-6666',
-    endereco: 'Av. Copacabana, 321 - Rio de Janeiro, RJ'
-  }
-];
-
-let mockPermissions: UserPermission[] = [
-  {
-    userId: '1',
-    brokerageId: '1',
-    role: 'admin',
-    createdAt: new Date().toISOString(),
-    createdBy: '1'
-  },
-  {
-    userId: '1',
-    brokerageId: '2', 
-    role: 'admin',
-    createdAt: new Date().toISOString(),
-    createdBy: '1'
-  }
-];
-
 export function useAccessControl() {
-  const [users] = useState<User[]>(mockUsers);
-  const [permissions, setPermissions] = useState<UserPermission[]>(mockPermissions);
-  const [currentUser] = useState<User>(mockUsers[0]); // Simula usuário atual
+  // Estados vazios - dados virão do backend ou localStorage
+  const [users] = useState<User[]>([]);
+  const [permissions, setPermissions] = useState<UserPermission[]>([]);
+  const [currentUser] = useState<User | null>(null);
   
   // Buscar usuários que têm acesso a uma corretora específica
   const getBrokerageUsers = useCallback((brokerageId: string): Array<{ user: User; permission: UserPermission }> => {
@@ -93,7 +41,7 @@ export function useAccessControl() {
     return brokeragePermissions.map(permission => {
       const user = users.find(u => u.id === permission.userId);
       return {
-        user: user || mockUsers[0],
+        user: user,
         permission
       };
     }).filter(item => item.user);
@@ -137,11 +85,11 @@ export function useAccessControl() {
       brokerageId,
       role,
       createdAt: new Date().toISOString(),
-      createdBy: currentUser.id
+      createdBy: currentUser?.id || 'unknown' // Assuming currentUser is not null
     };
 
     setPermissions(prev => [...prev, newPermission]);
-  }, [permissions, currentUser.id]);
+  }, [permissions, currentUser]);
 
   // Remover usuário de uma corretora
   const removeUserFromBrokerage = useCallback((userId: string, brokerageId: string) => {

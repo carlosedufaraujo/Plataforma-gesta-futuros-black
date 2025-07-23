@@ -106,8 +106,8 @@ export default function ExercisePositionModal({
 
   if (!isOpen || !position) return null;
 
-  const currentPnL = (position.currentPrice - position.entryPrice) * position.quantity;
-  const pnlPercentage = ((position.currentPrice - position.entryPrice) / position.entryPrice) * 100;
+  const currentPnL = (position.current_price - position.entry_price) * position.quantity;
+  const pnlPercentage = ((position.current_price - position.entry_price) / position.entry_price) * 100;
 
   return (
     <div className="modal-overlay">

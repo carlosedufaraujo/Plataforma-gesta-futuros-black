@@ -1,53 +1,54 @@
-import axios from 'axios';
 import { Position, Option, Transaction, User, Contract } from '@/types';
 
+// Configuração base da API
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
-// Configuração do Axios
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Interceptor para adicionar token de autenticação
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+// Cliente HTTP básico
+const apiClient = {
+  get: async (url: string) => {
+    const response = await fetch(`${API_BASE_URL}${url}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-    return config;
+    return response.json();
   },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Interceptor para tratamento de respostas
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('authToken');
-      window.location.href = '/login';
+  
+  post: async (url: string, data: any) => {
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-    return Promise.reject(error);
-  }
-);
-
-// Auth API
-export const authAPI = {
-  login: async (email: string, password: string): Promise<{ token: string; user: User }> => {
-    const response = await apiClient.post('/auth/login', { email, password });
-    return response.data;
+    return response.json();
   },
 
-  me: async (): Promise<User> => {
-    const response = await apiClient.get('/auth/me');
-    return response.data;
+  put: async (url: string, data: any) => {
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  delete: async (url: string) => {
+    const response = await fetch(`${API_BASE_URL}${url}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
   },
 };
 
@@ -63,8 +64,8 @@ export const positionsAPI = {
     return response.data;
   },
 
-  update: async (id: string, position: Partial<Position>): Promise<Position> => {
-    const response = await apiClient.put(`/positions/${id}`, position);
+  update: async (id: string, updates: Partial<Position>): Promise<Position> => {
+    const response = await apiClient.put(`/positions/${id}`, updates);
     return response.data;
   },
 
@@ -90,8 +91,13 @@ export const optionsAPI = {
     return response.data;
   },
 
-  update: async (id: string, option: Partial<Option>): Promise<Option> => {
-    const response = await apiClient.put(`/options/${id}`, option);
+  update: async (id: string, updates: Partial<Option>): Promise<Option> => {
+    const response = await apiClient.put(`/options/${id}`, updates);
+    return response.data;
+  },
+
+  exercise: async (id: string): Promise<Option> => {
+    const response = await apiClient.put(`/options/${id}/exercise`, {});
     return response.data;
   },
 
@@ -100,15 +106,25 @@ export const optionsAPI = {
   },
 };
 
-// Transactions API
-export const transactionsAPI = {
-  getAll: async (filters?: { startDate?: string; endDate?: string }): Promise<Transaction[]> => {
-    const params = new URLSearchParams();
-    if (filters?.startDate) params.append('startDate', filters.startDate);
-    if (filters?.endDate) params.append('endDate', filters.endDate);
-    
-    const response = await apiClient.get(`/transactions?${params.toString()}`);
+// Users API
+export const usersAPI = {
+  getAll: async (): Promise<User[]> => {
+    const response = await apiClient.get('/users');
     return response.data;
+  },
+
+  create: async (user: Omit<User, 'id'>): Promise<User> => {
+    const response = await apiClient.post('/users', user);
+    return response.data;
+  },
+
+  update: async (id: string, updates: Partial<User>): Promise<User> => {
+    const response = await apiClient.put(`/users/${id}`, updates);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiClient.delete(`/users/${id}`);
   },
 };
 
@@ -116,11 +132,6 @@ export const transactionsAPI = {
 export const contractsAPI = {
   getAll: async (): Promise<Contract[]> => {
     const response = await apiClient.get('/contracts');
-    return response.data;
-  },
-
-  getCurrentPrices: async (): Promise<Record<string, number>> => {
-    const response = await apiClient.get('/prices/current');
     return response.data;
   },
 };
@@ -151,6 +162,4 @@ export const settingsAPI = {
     const response = await apiClient.put('/settings', settings);
     return response.data;
   },
-};
-
-export default apiClient; 
+}; 

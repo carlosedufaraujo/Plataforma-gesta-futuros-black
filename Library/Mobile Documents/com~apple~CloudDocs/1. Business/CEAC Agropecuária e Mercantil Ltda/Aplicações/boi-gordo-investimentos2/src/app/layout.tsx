@@ -1,8 +1,17 @@
-import '../styles/globals.css';
+import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { DataProvider } from '@/contexts/DataContext';
+import '../styles/globals.css';
 import { UserProvider } from '@/contexts/UserContext';
+import { DataProvider } from '@/contexts/DataContext';
 import OnboardingCheck from '@/components/Layout/OnboardingCheck';
+
+// Importar utilitário de inspeção em desenvolvimento
+if (process.env.NODE_ENV === 'development') {
+  import('@/utils/inspectLocalStorage');
+  import('@/utils/seedData');
+  import('@/utils/clearData');
+  import('@/utils/autoCleanMockData'); // Limpeza automática
+}
 
 const inter = Inter({ subsets: ['latin'] });
 

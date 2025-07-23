@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Position } from '@/types';
 import { useExpirations } from '@/hooks/useExpirations';
 
@@ -11,341 +11,289 @@ interface NewPositionModalProps {
   editingPosition?: Position | null;
 }
 
-interface PositionItem {
+interface PositionData {
   id: string;
-  contractInput: string;
-  contractType: string;
-  expiration: string;
+  contract: string;
+  contractDisplay: string;
   direction: 'LONG' | 'SHORT';
   quantity: string;
   price: string;
-  stopLoss: string;
-  takeProfit: string;
 }
 
 export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPosition }: NewPositionModalProps) {
   const { activeExpirations } = useExpirations();
   
-  // Data atual formatada para input date
-  const getCurrentDate = () => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+  // Função para obter data e hora atual no formato datetime-local
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  const [selectedDate, setSelectedDate] = useState(getCurrentDate());
-  const [positions, setPositions] = useState<PositionItem[]>([
-    {
-      id: '1',
-      contractInput: editingPosition?.contract || '',
-      contractType: editingPosition?.contract.slice(0, 3) || 'BGI',
-      expiration: editingPosition?.contract.slice(3, 4) || '',
-      direction: editingPosition?.direction || 'LONG',
-      quantity: editingPosition?.quantity.toString() || '',
-      price: editingPosition?.entryPrice.toString() || '',
-      stopLoss: editingPosition?.stopLoss?.toString() || '',
-      takeProfit: editingPosition?.takeProfit?.toString() || ''
-    }
-  ]);
+  // Estados principais
+  const [executionDate, setExecutionDate] = useState(() => getCurrentDateTime());
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState<number>(-1);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [positions, setPositions] = useState<PositionData[]>([{
+    id: '1',
+    contract: '',
+    contractDisplay: '',
+    direction: 'LONG',
+    quantity: '',
+    price: ''
+  }]);
 
-  // Definir primeiro vencimento ativo como padrão
-  useEffect(() => {
-    if (activeExpirations.length > 0 && !positions[0].expiration) {
-      setPositions(prev => prev.map(pos => ({ ...pos, expiration: activeExpirations[0].code })));
-    }
-  }, [activeExpirations, positions]);
+  const [contractSuggestions, setContractSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState<Record<string, boolean>>({});
 
-  // Sincronizar contractInput quando editingPosition mudar
-  useEffect(() => {
-    if (editingPosition) {
-      setPositions(prev => prev.map(pos => ({
-        ...pos,
-        contractInput: editingPosition.contract,
-        contractType: editingPosition.contract.slice(0, 3),
-        expiration: editingPosition.contract.slice(3, 4),
-        direction: editingPosition.direction,
-        quantity: editingPosition.quantity.toString(),
-        price: editingPosition.entryPrice.toString(),
-        stopLoss: editingPosition.stopLoss?.toString() || '',
-        takeProfit: editingPosition.takeProfit?.toString() || ''
-      })));
-    }
-  }, [editingPosition]);
-
-  // Função para adicionar nova posição à lista
-  const addNewPosition = () => {
-    const newId = (positions.length + 1).toString();
-    const newPosition: PositionItem = {
-      id: newId,
-      contractInput: '',
-      contractType: 'BGI',
-      expiration: activeExpirations.length > 0 ? activeExpirations[0].code : '',
-      direction: 'LONG',
-      quantity: '',
-      price: '',
-      stopLoss: '',
-      takeProfit: ''
-    };
-    setPositions(prev => [...prev, newPosition]);
-  };
-
-  // Função para remover posição da lista
-  const removePosition = (id: string) => {
-    if (positions.length > 1) {
-      setPositions(prev => prev.filter(pos => pos.id !== id));
-    }
-  };
-
-  // Função para atualizar posição específica
-  const updatePosition = (id: string, field: string, value: string) => {
-    setPositions(prev => prev.map(pos => 
-      pos.id === id ? { ...pos, [field]: value } : pos
-    ));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  // Gerar lista de contratos disponíveis
+  // Gerar sugestões de contratos
   const generateContractSuggestions = () => {
-    const contracts = [];
+    const contracts: string[] = [];
     const contractTypes = [
       { code: 'BGI', name: 'Boi Gordo' },
       { code: 'CCM', name: 'Milho' }
     ];
-
+    
     contractTypes.forEach(type => {
       activeExpirations.forEach(exp => {
         const contractCode = `${type.code}${exp.code}${exp.year.slice(-2)}`;
         contracts.push(`${contractCode} - ${type.name} ${exp.month}/${exp.year}`);
       });
     });
-
+    
     return contracts;
   };
 
-  // Filtrar sugestões baseado no input
+  // Atualizar posição
+  const updatePosition = (id: string, field: keyof PositionData, value: string) => {
+    setPositions(prev => prev.map(pos => 
+      pos.id === id ? { ...pos, [field]: value } : pos
+    ));
+  };
+
+  // Adicionar nova posição
+  const addPosition = () => {
+    const newId = (positions.length + 1).toString();
+    setPositions(prev => [...prev, {
+      id: newId,
+      contract: '',
+      contractDisplay: '',
+      direction: 'LONG',
+      quantity: '',
+      price: ''
+    }]);
+  };
+
+  // Remover posição
+  const removePosition = (id: string) => {
+    if (positions.length > 1) {
+      setPositions(prev => prev.filter(pos => pos.id !== id));
+    }
+  };
+
+  // Filtrar sugestões
   const filterSuggestions = (input: string) => {
-    if (!input) return [];
-    
-    const allContracts = generateContractSuggestions();
-    return allContracts.filter(contract => 
-      contract.toLowerCase().includes(input.toLowerCase())
-    ).slice(0, 5); // Limitar a 5 sugestões
+    const allSuggestions = generateContractSuggestions();
+    return allSuggestions.filter(suggestion =>
+      suggestion.toLowerCase().includes(input.toLowerCase())
+    );
   };
 
-  // Handler para mudanças no input do contrato
-  const handleContractInputChange = (id: string, value: string) => {
-    updatePosition(id, 'contractInput', value);
-    
-    if (value.length > 0) {
-      const filtered = filterSuggestions(value);
-      setSuggestions(filtered);
-      setShowSuggestions(filtered.length > 0);
-      setActiveSuggestionIndex(-1);
-      
-      // Auto-parse se o formato estiver correto (ex: BGIK25)
-      if (value.length >= 4) {
-        const contractType = value.slice(0, 3).toUpperCase();
-        const expiration = value.slice(3, 4).toUpperCase();
-        
-        if ((contractType === 'BGI' || contractType === 'CCM') && 
-            activeExpirations.some(exp => exp.code === expiration)) {
-          updatePosition(id, 'contractType', contractType);
-          updatePosition(id, 'expiration', expiration);
-        }
-      }
-    } else {
-      setSuggestions([]);
-      setShowSuggestions(false);
-    }
-  };
-
-  const selectSuggestion = (id: string, suggestion: string) => {
+  // Selecionar sugestão
+  const selectSuggestion = (positionId: string, suggestion: string) => {
     const contractCode = suggestion.split(' - ')[0];
-    updatePosition(id, 'contractInput', contractCode);
-    
-    const contractType = contractCode.slice(0, 3);
-    const expiration = contractCode.slice(3, 4);
-    
-    updatePosition(id, 'contractType', contractType);
-    updatePosition(id, 'expiration', expiration);
-    
-    setShowSuggestions(false);
-    setActiveSuggestionIndex(-1);
+    updatePosition(positionId, 'contract', contractCode);
+    updatePosition(positionId, 'contractDisplay', suggestion);
+    setShowSuggestions(prev => ({ ...prev, [positionId]: false }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validação
-    const newErrors: Record<string, string> = {};
-    
-    if (!positions[0].quantity || parseInt(positions[0].quantity) <= 0) {
-      newErrors.quantity = 'Quantidade é obrigatória e deve ser maior que zero';
-    }
-    
-    if (!positions[0].price || parseFloat(positions[0].price) <= 0) {
-      newErrors.price = 'Preço de entrada é obrigatório e deve ser maior que zero';
-    }
-    
-    if (!positions[0].contractInput || positions[0].contractInput.length < 4) {
-      newErrors.expiration = 'Contrato é obrigatório (ex: BGIK25)';
-    }
+  // Submeter formulário
+  const handleSubmit = () => {
+    // Validação básica
+    const isValid = positions.every(pos => 
+      pos.contract && pos.quantity && pos.price
+    );
 
-    setErrors(newErrors);
-
-    if (Object.keys(newErrors).length > 0) {
+    if (!isValid) {
+      alert('Por favor, preencha todos os campos obrigatórios.');
       return;
     }
 
-    // Usar o código do contrato diretamente do input
-    const contractCode = positions[0].contractInput.toUpperCase();
+    // Processar cada posição
+    positions.forEach(pos => {
+      const positionData: Omit<Position, 'id'> = {
+        user_id: 'current_user',
+        contract_id: `contract_${Date.now()}`,
+        contract: pos.contract,
+        direction: pos.direction,
+        quantity: parseInt(pos.quantity),
+        entry_price: parseFloat(pos.price),
+        current_price: parseFloat(pos.price),
+        status: 'OPEN',
+        entry_date: new Date(executionDate).toISOString(),
+        fees: 0,
+        unrealized_pnl: 0,
+        pnl_percentage: 0
+      };
+      onSubmit(positionData);
+    });
 
-    const newPosition: Omit<Position, 'id'> = {
-      contract: contractCode,
-      direction: positions[0].direction,
-      quantity: parseInt(positions[0].quantity),
-      entryPrice: parseFloat(positions[0].price.replace('R$ ', '').replace('.', '').replace(',', '.')),
-      currentPrice: parseFloat(positions[0].price.replace('R$ ', '').replace('.', '').replace(',', '.')),
-      stopLoss: positions[0].stopLoss ? parseFloat(positions[0].stopLoss.replace('R$ ', '').replace('.', '').replace(',', '.')) : undefined,
-      takeProfit: positions[0].takeProfit ? parseFloat(positions[0].takeProfit.replace('R$ ', '').replace('.', '').replace(',', '.')) : undefined,
-      status: 'OPEN',
-      openDate: new Date().toISOString(),
-    };
-
-    onSubmit(newPosition);
     onClose();
-    
-    // Reset form
-    setPositions([{
-      id: '1',
-      contractInput: activeExpirations.length > 0 ? activeExpirations[0].code : '',
-      contractType: 'BGI',
-      expiration: activeExpirations.length > 0 ? activeExpirations[0].code : '',
-      direction: 'LONG',
-      quantity: '',
-      price: '',
-      stopLoss: '',
-      takeProfit: ''
-    }]);
-    setContractInput('');
-    setSuggestions([]);
-    setShowSuggestions(false);
-    setErrors({});
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setPositions(prev => prev.map(pos => ({
-      ...pos,
-      [field]: value
-    })));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
+  // Reset ao fechar e configurar ao abrir
+  useEffect(() => {
+    if (isOpen) {
+      // Sempre usar data e hora atual
+      setExecutionDate(getCurrentDateTime());
+      
+      if (editingPosition) {
+        // Modo edição: configurar com dados da posição
+        setPositions([{
+          id: '1',
+          contract: editingPosition.contract,
+          contractDisplay: editingPosition.contract,
+          direction: editingPosition.direction,
+          quantity: editingPosition.quantity.toString(),
+          price: editingPosition.entry_price.toString()
+        }]);
+      } else {
+        // Modo nova posição: resetar
+        setPositions([{
+          id: '1',
+          contract: '',
+          contractDisplay: '',
+          direction: 'LONG',
+          quantity: '',
+          price: ''
+        }]);
+      }
     }
-  };
+  }, [isOpen, editingPosition]);
 
-  if (!isOpen) {
-    return null;
-  }
+  if (!isOpen) return null;
 
   return (
-    <div className={`modal-overlay ${isOpen ? 'active' : ''}`}>
-      <div className="modal-container">
+    <div className="modal-overlay">
+      <div className="modal position-modal">
+        {/* Header */}
         <div className="modal-header">
-          <h2 className="modal-title">
-            {editingPosition ? 'Editar Posição' : 'Nova Posição'}
-          </h2>
-          <button className="modal-close" onClick={onClose}>×</button>
+          <div className="modal-title-section">
+            <h2 className="modal-title">{editingPosition ? 'Editar Posição' : 'Nova Posição'}</h2>
+          </div>
+          <button className="modal-close" onClick={onClose}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
 
+        {/* Body */}
         <div className="modal-body">
-          <form onSubmit={handleSubmit}>
-            
-            {/* Data da Operação */}
-            <div className="form-group">
-              <label className="form-label">Data de Execução</label>
-              <input 
-                type="date" 
-                className="form-input"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-              />
-            </div>
-
-            {/* Posições */}
-            <div className="form-section">
-              <div className="form-section-header">
-                <h3 className="form-section-title">
-                  Posições ({positions.length})
-                </h3>
+          {/* Seção Superior: Data, Card Posições e Controles */}
+          <div className="modal-top-section">
+            <div className="execution-date-container">
+              <label htmlFor="execution-date" className="field-label">Data e Horário de Execução</label>
+              <div className="date-input-group">
+                <input
+                  id="execution-date"
+                  type="datetime-local"
+                  value={executionDate}
+                  onChange={(e) => setExecutionDate(e.target.value)}
+                  className="date-input"
+                />
                 <button 
-                  type="button" 
-                  className="btn btn-success btn-sm"
-                  onClick={addNewPosition}
+                  type="button"
+                  onClick={() => setExecutionDate(getCurrentDateTime())}
+                  className="current-time-btn"
+                  title="Usar horário atual"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12,6 12,12 16,14"></polyline>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Card de Posições */}
+            <div className="positions-card-horizontal">
+              <div className="positions-info">
+                <span className="positions-label">Posições</span>
+                <span className="positions-count-horizontal">{positions.length}</span>
+              </div>
+            </div>
+            
+            {!editingPosition && (
+              <div className="add-position-container">
+                <label className="field-label">Adicionar</label>
+                <button className="add-position-btn-inline" onClick={addPosition} title="Adicionar nova posição">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                   </svg>
-                  Adicionar
                 </button>
               </div>
+            )}
+          </div>
 
-              {positions.map((position, index) => (
-                <div key={position.id} className="position-item">
-                  
-                  {/* Header da posição */}
+          {/* Lista de Posições */}
+          <div className="positions-section">
+            {positions.map((position, index) => (
+              <div key={position.id} className="position-card">
+                {/* ID da Posição */}
+                <div className="position-id-badge">
+                  <span className="position-id">P{String(index + 1).padStart(2, '0')}</span>
+                </div>
+                
+                {/* Header do Card */}
+                <div className="position-card-header">
                   {positions.length > 1 && (
-                    <div className="position-header">
-                      <span className="position-number">Posição #{index + 1}</span>
-                      <button 
-                        type="button" 
-                        className="btn btn-danger btn-sm"
-                        onClick={() => removePosition(position.id)}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="3,6 5,6 21,6"></polyline>
-                          <path d="M19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2-2h4a2,2 0 0,1,2,2v2"></path>
-                        </svg>
-                        Remover
-                      </button>
-                    </div>
+                    <button 
+                      className="remove-position-btn"
+                      onClick={() => removePosition(position.id)}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
                   )}
+                </div>
 
+                {/* Campos do Formulário */}
+                <div className="position-fields">
                   {/* Contrato */}
-                  <div className="form-group">
-                    <label className="form-label">Contrato</label>
+                  <div className="field-group contract-field">
+                    <label className="field-label">Contrato</label>
                     <div className="autocomplete-container">
-                      <input 
-                        ref={inputRef}
+                      <input
                         type="text"
-                        className={`form-input ${errors.expiration ? 'error' : ''}`}
-                        value={position.contractInput}
-                        onChange={(e) => handleContractInputChange(position.id, e.target.value)}
-                        onFocus={() => position.contractInput && setShowSuggestions(suggestions.length > 0)}
-                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                        placeholder="Ex: BGIK25, CCMN25"
+                        value={position.contractDisplay}
+                        onChange={(e) => {
+                          updatePosition(position.id, 'contractDisplay', e.target.value);
+                          const suggestions = filterSuggestions(e.target.value);
+                          setContractSuggestions(suggestions);
+                          setShowSuggestions(prev => ({ ...prev, [position.id]: suggestions.length > 0 }));
+                        }}
+                        onFocus={() => {
+                          const suggestions = generateContractSuggestions();
+                          setContractSuggestions(suggestions);
+                          setShowSuggestions(prev => ({ ...prev, [position.id]: true }));
+                        }}
+                        className="contract-input"
+                        placeholder="Ex: BGIK25"
                       />
-                      
-                      {showSuggestions && suggestions.length > 0 && (
-                        <div className="autocomplete-suggestions">
-                          {suggestions.map((suggestion, idx) => (
-                            <div 
+                      {showSuggestions[position.id] && contractSuggestions.length > 0 && (
+                        <div className="suggestions-dropdown">
+                          {contractSuggestions.slice(0, 5).map((suggestion, idx) => (
+                            <div
                               key={idx}
-                              className={`suggestion-item ${idx === activeSuggestionIndex ? 'active' : ''}`}
+                              className="suggestion-item"
                               onClick={() => selectSuggestion(position.id, suggestion)}
                             >
                               {suggestion}
@@ -354,20 +302,19 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
                         </div>
                       )}
                     </div>
-                    {errors.expiration && <span className="error-message">{errors.expiration}</span>}
                   </div>
 
                   {/* Direção */}
-                  <div className="form-group">
-                    <label className="form-label">Direção</label>
-                    <div className="direction-selector">
+                  <div className="field-group direction-field">
+                    <label className="field-label">Direção</label>
+                    <div className="direction-buttons">
                       <button
                         type="button"
                         className={`direction-btn ${position.direction === 'LONG' ? 'active long' : ''}`}
                         onClick={() => updatePosition(position.id, 'direction', 'LONG')}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M7 17l9.2-9.2M17 17V7H7"></path>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <path d="m18 15-6-6-6 6"/>
                         </svg>
                         LONG
                       </button>
@@ -376,80 +323,58 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
                         className={`direction-btn ${position.direction === 'SHORT' ? 'active short' : ''}`}
                         onClick={() => updatePosition(position.id, 'direction', 'SHORT')}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M17 7l-9.2 9.2M7 7v10h10"></path>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <polyline points="6,9 12,15 18,9"/>
                         </svg>
                         SHORT
                       </button>
                     </div>
                   </div>
 
-                  {/* Quantidade e Preço */}
-                  <div className="form-grid">
-                    <div className="form-group">
-                      <label className="form-label">Quantidade</label>
-                      <input 
-                        type="number" 
-                        className={`form-input ${errors.quantity ? 'error' : ''}`}
-                        value={position.quantity}
-                        onChange={(e) => updatePosition(position.id, 'quantity', e.target.value)}
-                        min="1"
-                        placeholder="10"
-                      />
-                      {errors.quantity && <span className="error-message">{errors.quantity}</span>}
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Preço de Entrada</label>
-                      <input 
-                        type="text" 
-                        className={`form-input ${errors.price ? 'error' : ''}`}
-                        value={position.price}
-                        onChange={(e) => updatePosition(position.id, 'price', e.target.value)}
-                        placeholder="350,50"
-                      />
-                      {errors.price && <span className="error-message">{errors.price}</span>}
-                    </div>
+                  {/* Quantidade */}
+                  <div className="field-group quantity-field">
+                    <label className="field-label">Qtd</label>
+                    <input
+                      type="number"
+                      value={position.quantity}
+                      onChange={(e) => updatePosition(position.id, 'quantity', e.target.value)}
+                      className="quantity-input"
+                      placeholder="0"
+                      min="1"
+                    />
                   </div>
 
-                  {/* Stop Loss e Take Profit */}
-                  <div className="form-grid">
-                    <div className="form-group">
-                      <label className="form-label">Stop Loss (Opcional)</label>
-                      <input 
-                        type="text" 
-                        className="form-input"
-                        value={position.stopLoss}
-                        onChange={(e) => updatePosition(position.id, 'stopLoss', e.target.value)}
-                        placeholder="320,00"
-                      />
-                    </div>
-                    
-                    <div className="form-group">
-                      <label className="form-label">Take Profit (Opcional)</label>
-                      <input 
-                        type="text" 
-                        className="form-input"
-                        value={position.takeProfit}
-                        onChange={(e) => updatePosition(position.id, 'takeProfit', e.target.value)}
-                        placeholder="400,00"
+                  {/* Preço */}
+                  <div className="field-group price-field">
+                    <label className="field-label">Preço</label>
+                    <div className="price-input-container">
+                      <span className="currency-symbol">R$</span>
+                      <input
+                        type="number"
+                        value={position.price}
+                        onChange={(e) => updatePosition(position.id, 'price', e.target.value)}
+                        className="price-input"
+                        placeholder="0"
+                        step="0.01"
                       />
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
 
-            {/* Ações */}
-            <div className="modal-actions">
-              <button type="button" className="btn btn-secondary" onClick={onClose}>
-                Cancelar
-              </button>
-              <button type="submit" className="btn btn-primary">
-                {editingPosition ? 'Atualizar' : `Criar ${positions.length} Posição${positions.length > 1 ? 'ões' : ''}`}
-              </button>
-            </div>
-          </form>
+
+        </div>
+
+        {/* Footer */}
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="btn-register" onClick={handleSubmit}>
+            Cadastrar
+          </button>
         </div>
       </div>
     </div>

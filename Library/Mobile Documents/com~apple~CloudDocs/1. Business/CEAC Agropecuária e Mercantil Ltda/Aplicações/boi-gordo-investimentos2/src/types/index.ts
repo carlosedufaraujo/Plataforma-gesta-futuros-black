@@ -2,7 +2,7 @@ export type ContractType = 'BGI' | 'CCM' | 'ICF' | 'DOL' | 'IND';
 export type PositionDirection = 'LONG' | 'SHORT';
 export type OptionType = 'CALL' | 'PUT';
 export type TransactionType = 'BUY' | 'SELL' | 'EXERCISE' | 'EXPIRE';
-export type PositionStatus = 'OPEN' | 'CLOSED' | 'PARTIAL';
+export type PositionStatus = 'OPEN' | 'CLOSED' | 'PARTIAL' | 'NETTED' | 'CONSOLIDATED';
 
 export interface User {
   id: string;
@@ -199,8 +199,8 @@ export interface WSMessage {
 }
 
 // Navigation
-export type PageType = 'rentabilidade' | 'posicoes' | 'opcoes' | 'transacoes' | 'performance' | 'configuracoes';
-export type PositionTabType = 'gestao' | 'performance' | 'historico' | 'resumo';
+export type PageType = 'rentabilidade' | 'posicoes' | 'opcoes' | 'performance' | 'configuracoes';
+export type PositionTabType = 'gestao' | 'performance' | 'transacoes' | 'resumo';
 export type OptionTabType = 'posicoes' | 'estrategias' | 'payoff';
 
 // Theme

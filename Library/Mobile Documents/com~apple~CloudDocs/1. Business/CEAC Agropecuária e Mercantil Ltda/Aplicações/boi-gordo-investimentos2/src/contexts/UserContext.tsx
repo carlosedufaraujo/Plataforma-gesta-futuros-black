@@ -42,79 +42,11 @@ interface UserProviderProps {
 }
 
 export const UserProvider = ({ children }: UserProviderProps) => {
-  // Dados temporários para desenvolvimento - REMOVER quando backend estiver pronto
-  const tempUser: User = {
-    id: '00000000-1111-2222-3333-444444444444',
-    nome: 'Carlos Eduardo Almeida',
-    cpf: '123.456.789-00',
-    endereco: 'Rua das Palmeiras, 123 - São Paulo, SP',
-    telefone: '(11) 99999-9999',
-    email: 'carlos.eduardo@ceacagro.com.br',
-    isActive: true,
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-15T10:30:00Z',
-    brokerageIds: ['brok001', 'brok002', 'brok003']
-  };
-
-  const tempBrokerages: Brokerage[] = [
-    {
-      id: 'brok001',
-      nome: 'XP Investimentos',
-      cnpj: '02.332.886/0001-04',
-      endereco: 'Av. Brigadeiro Faria Lima, 3300 - São Paulo, SP',
-      assessor: 'Roberto Silva',
-      telefone: '(11) 3003-3000',
-      email: 'assessoria@xpi.com.br',
-      corretagemMilho: 2.50,
-      corretagemBoi: 3.20,
-      taxas: 0.35,
-      impostos: 15.80,
-      isActive: true,
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-10T14:20:00Z',
-      authorizedUserIds: ['00000000-1111-2222-3333-444444444444']
-    },
-    {
-      id: 'brok002',  
-      nome: 'Rico Investimentos',
-      cnpj: '03.814.055/0001-74',
-      endereco: 'Av. Paulista, 1450 - São Paulo, SP',
-      assessor: 'Ana Paula Costa',
-      telefone: '(11) 2050-5000',
-      email: 'suporte@rico.com.vc',
-      corretagemMilho: 2.80,
-      corretagemBoi: 3.50,
-      taxas: 0.28,
-      impostos: 16.20,
-      isActive: true,
-      createdAt: '2024-01-02T00:00:00Z',
-      updatedAt: '2024-01-12T09:15:00Z',
-      authorizedUserIds: ['00000000-1111-2222-3333-444444444444']
-    },
-    {
-      id: 'brok003',
-      nome: 'Clear Corretora',
-      cnpj: '02.332.886/0011-11',
-      endereco: 'Av. Paulista, 1000 - São Paulo, SP',
-      assessor: 'João Santos',
-      telefone: '(11) 4000-4000',
-      email: 'contato@clear.com.br',
-      corretagemMilho: 2.20,
-      corretagemBoi: 2.90,
-      taxas: 0.25,
-      impostos: 15.00,
-      isActive: true,
-      createdAt: '2024-01-03T00:00:00Z',
-      updatedAt: '2024-01-13T16:45:00Z',
-      authorizedUserIds: ['00000000-1111-2222-3333-444444444444']
-    }
-  ];
-
-  // Estado inicial com dados temporários
+  // Estado inicial vazio - dados virão do localStorage ou backend
   const [currentSession, setCurrentSession] = useState<CurrentUserSession>({
-    user: tempUser, // Usuário temporário para desenvolvimento
+    user: null,
     selectedBrokerage: null,
-    availableBrokerages: tempBrokerages, // Corretoras temporárias
+    availableBrokerages: [],
     lastTransaction: null
   });
   
@@ -132,7 +64,7 @@ export const UserProvider = ({ children }: UserProviderProps) => {
       // const brokeragesRes = await fetch('/api/brokerages');
       
       console.log('📡 Buscando dados do usuário...');
-      console.log('⚠️  Usando dados temporários para desenvolvimento');
+      console.log('⚠️  Sistema limpo - aguardando dados reais');
       
       // Por enquanto, aguardar implementação do backend
       // setCurrentSession({

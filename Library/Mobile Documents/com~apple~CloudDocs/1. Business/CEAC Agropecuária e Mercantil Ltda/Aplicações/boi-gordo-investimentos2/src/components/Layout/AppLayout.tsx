@@ -37,7 +37,6 @@ export default function AppLayout({
       rentabilidade: 'Dashboard',
       posicoes: 'Posições',
       opcoes: 'Opções',
-      transacoes: 'Transações',
       performance: 'Performance',
       configuracoes: 'Configurações'
     };

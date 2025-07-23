@@ -66,45 +66,35 @@ class WebSocketService {
     this.isConnecting = false;
   }
 
-  // Subscrições de eventos
+  // Subscription methods
   subscribeToPositions(callback: (positions: any[]) => void): void {
-    if (!this.socket) return;
+    this.callbacks.positions = callback;
     this.socket.on('positions:updated', callback);
   }
 
   unsubscribeFromPositions(): void {
-    if (!this.socket) return;
+    this.callbacks.positions = null;
     this.socket.off('positions:updated');
   }
 
-  subscribeToPrices(callback: (prices: Record<string, number>) => void): void {
-    if (!this.socket) return;
-    this.socket.on('prices:updated', callback);
-  }
-
-  unsubscribeFromPrices(): void {
-    if (!this.socket) return;
-    this.socket.off('prices:updated');
-  }
-
-  subscribeToTransactions(callback: (transactions: any[]) => void): void {
-    if (!this.socket) return;
-    this.socket.on('transactions:updated', callback);
-  }
-
-  unsubscribeFromTransactions(): void {
-    if (!this.socket) return;
-    this.socket.off('transactions:updated');
-  }
-
   subscribeToOptions(callback: (options: any[]) => void): void {
-    if (!this.socket) return;
+    this.callbacks.options = callback;
     this.socket.on('options:updated', callback);
   }
 
   unsubscribeFromOptions(): void {
-    if (!this.socket) return;
+    this.callbacks.options = null;
     this.socket.off('options:updated');
+  }
+
+  subscribeToPrices(callback: (prices: any[]) => void): void {
+    this.callbacks.prices = callback;
+    this.socket.on('prices:updated', callback);
+  }
+
+  unsubscribeFromPrices(): void {
+    this.callbacks.prices = null;
+    this.socket.off('prices:updated');
   }
 
   // Métodos utilitários

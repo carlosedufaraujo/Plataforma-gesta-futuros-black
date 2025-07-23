@@ -6,7 +6,6 @@ import AppLayout from '@/components/Layout/AppLayout';
 import RentabilidadePage from '@/components/Pages/RentabilidadePage';
 import PosicoesPage from '@/components/Pages/PosicoesPage';
 import OpcoesPage from '@/components/Pages/OpcoesPage';
-import TransacoesPage from '@/components/Pages/TransacoesPage';
 import PerformancePage from '@/components/Pages/PerformancePage';
 import ConfiguracoesPage from '@/components/Pages/ConfiguracoesPage';
 
@@ -22,8 +21,6 @@ export default function AppWrapper() {
         return <PosicoesPage selectedPeriod={selectedPeriod} />;
       case 'opcoes':
         return <OpcoesPage selectedPeriod={selectedPeriod} />;
-      case 'transacoes':
-        return <TransacoesPage selectedPeriod={selectedPeriod} />;
       case 'performance':
         return <PerformancePage selectedPeriod={selectedPeriod} />;
       case 'configuracoes':

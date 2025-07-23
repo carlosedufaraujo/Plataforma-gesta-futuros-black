@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Position } from '@/types';
 
 interface ClosePositionModalProps {
@@ -25,12 +25,24 @@ export default function ClosePositionModal({
   position 
 }: ClosePositionModalProps) {
   const [formData, setFormData] = useState({
-    quantity: position?.quantity || 0,
-    closePrice: position?.currentPrice || 0,
+    quantity: 0,
+    closePrice: 0,
     reason: ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Atualizar formData quando position mudar
+  useEffect(() => {
+    if (position) {
+      setFormData({
+        quantity: position.quantity, // Sempre carregar com a quantidade total da posição
+        closePrice: position.entry_price, // Carregar com preço de entrada em vez do atual
+        reason: ''
+      });
+      setErrors({});
+    }
+  }, [position]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -41,9 +53,11 @@ export default function ClosePositionModal({
 
     if (!position) {
       newErrors.general = 'Posição não encontrada';
+      setErrors(newErrors);
+      return Object.keys(newErrors).length === 0;
     }
 
-    if (formData.quantity > (position?.quantity || 0)) {
+    if (formData.quantity > position.quantity) {
       newErrors.quantity = 'Quantidade não pode ser maior que a posição atual';
     }
 
@@ -80,7 +94,7 @@ export default function ClosePositionModal({
     // Reset form
     setFormData({
       quantity: position?.quantity || 0,
-      closePrice: position?.currentPrice || 0,
+      closePrice: position?.entry_price || 0, // Usar preço de entrada em vez do atual
       reason: ''
     });
     setErrors({});
@@ -102,136 +116,150 @@ export default function ClosePositionModal({
 
   if (!isOpen || !position) return null;
 
-  const currentPnL = (position.currentPrice - position.entryPrice) * position.quantity;
-  const estimatedPnL = (formData.closePrice - position.entryPrice) * formData.quantity;
+  // Calcular P&L considerando o tamanho dos contratos
+  const contractSize = position.contract.startsWith('BGI') ? 330 : 450;
+  const currentPnL = (position.direction === 'LONG' ? 1 : -1) * 
+    ((position.current_price || position.entry_price) - position.entry_price) * 
+    position.quantity * contractSize;
+  
+  const estimatedPnL = (position.direction === 'LONG' ? 1 : -1) * 
+    (formData.closePrice - position.entry_price) * 
+    formData.quantity * contractSize;
+  
   const pnlDifference = estimatedPnL - currentPnL;
 
   return (
     <div className="modal-overlay">
-      <div className="modal">
+      <div className="modal position-modal">
+        {/* Header */}
         <div className="modal-header">
-          <h3>Fechar Posição - {position.contract}</h3>
+          <div className="modal-title-section">
+            <h2 className="modal-title">Fechar Posição</h2>
+            <span className="modal-subtitle">{position.contract}</span>
+          </div>
           <button className="modal-close" onClick={onClose}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </button>
         </div>
 
+        {/* Body */}
         <div className="modal-body">
           {/* Informações da Posição */}
-          <div className="position-info">
-            <h4>Informações da Posição</h4>
-            <div className="info-grid">
-              <div className="info-item">
-                <label>Contrato:</label>
-                <span>{position.contract}</span>
-              </div>
-              <div className="info-item">
-                <label>Direção:</label>
-                <span className={`direction ${position.direction.toLowerCase()}`}>
-                  {position.direction === 'LONG' ? 'Comprado' : 'Vendido'}
-                </span>
-              </div>
-              <div className="info-item">
-                <label>Quantidade Atual:</label>
-                <span>{position.quantity} contratos</span>
-              </div>
-              <div className="info-item">
-                <label>Preço de Entrada:</label>
-                <span>R$ {position.entryPrice.toFixed(2)}</span>
-              </div>
-              <div className="info-item">
-                <label>Preço Atual:</label>
-                <span>R$ {position.currentPrice.toFixed(2)}</span>
-              </div>
-              <div className="info-item">
-                <label>P&L Atual:</label>
-                <span className={currentPnL >= 0 ? 'positive' : 'negative'}>
-                  {currentPnL >= 0 ? '+' : ''}R$ {currentPnL.toFixed(2)}
-                </span>
-              </div>
+          <div className="position-summary">
+            <div className="summary-row">
+              <span className="summary-label">Direção</span>
+              <span className={`badge ${position.direction === 'LONG' ? 'badge-success' : 'badge-danger'}`}>
+                {position.direction}
+              </span>
+            </div>
+            <div className="summary-row">
+              <span className="summary-label">Quantidade</span>
+              <span className="summary-value">{position.quantity} contratos</span>
+            </div>
+            <div className="summary-row">
+              <span className="summary-label">Preço Entrada</span>
+              <span className="summary-value">R$ {position.entry_price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="summary-row">
+              <span className="summary-label">Preço Atual</span>
+              <span className="summary-value">R$ {(position.current_price || position.entry_price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
 
-          {/* Simulação do Fechamento */}
-          {formData.closePrice > 0 && formData.quantity > 0 && (
-            <div className="simulation-info">
-              <h4>Simulação de Fechamento</h4>
-              <div className="info-grid">
-                <div className="info-item">
-                  <label>P&L Estimado:</label>
-                  <span className={estimatedPnL >= 0 ? 'positive' : 'negative'}>
-                    {estimatedPnL >= 0 ? '+' : ''}R$ {estimatedPnL.toFixed(2)}
-                  </span>
-                </div>
-                <div className="info-item">
-                  <label>Diferença:</label>
-                  <span className={pnlDifference >= 0 ? 'positive' : 'negative'}>
-                    {pnlDifference >= 0 ? '+' : ''}R$ {pnlDifference.toFixed(2)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {errors.general && (
-            <div className="error-message general-error">
-              {errors.general}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit}>
-            <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">Quantidade a Fechar *</label>
+          {/* Formulário de Fechamento */}
+          <div className="close-form">
+            <div className="form-row">
+              <div className="field-group">
+                <label className="field-label">Quantidade a Fechar</label>
                 <input
                   type="number"
-                  className={`form-input ${errors.quantity ? 'error' : ''}`}
                   value={formData.quantity}
                   onChange={(e) => handleChange('quantity', parseInt(e.target.value) || 0)}
+                  className={`form-input ${errors.quantity ? 'error' : ''}`}
                   min="1"
                   max={position.quantity}
                 />
                 {errors.quantity && <span className="error-message">{errors.quantity}</span>}
               </div>
-
-              <div className="form-group">
-                <label className="form-label">Preço de Fechamento (R$) *</label>
-                <input
-                  type="number"
-                  className={`form-input ${errors.closePrice ? 'error' : ''}`}
-                  value={formData.closePrice}
-                  onChange={(e) => handleChange('closePrice', parseFloat(e.target.value) || 0)}
-                  step="0.01"
-                  min="0.01"
-                />
+              
+              <div className="field-group">
+                <label className="field-label">Preço de Fechamento</label>
+                <div className="price-input-container">
+                  <span className="currency-symbol">R$</span>
+                  <input
+                    type="number"
+                    value={formData.closePrice}
+                    onChange={(e) => handleChange('closePrice', parseFloat(e.target.value) || 0)}
+                    className={`form-input ${errors.closePrice ? 'error' : ''}`}
+                    step="0.01"
+                    min="0.01"
+                  />
+                </div>
                 {errors.closePrice && <span className="error-message">{errors.closePrice}</span>}
-              </div>
-
-              <div className="form-group full-width">
-                <label className="form-label">Motivo do Fechamento *</label>
-                <textarea
-                  className={`form-textarea ${errors.reason ? 'error' : ''}`}
-                  value={formData.reason}
-                  onChange={(e) => handleChange('reason', e.target.value)}
-                  placeholder="Descreva o motivo para fechar esta posição..."
-                  rows={3}
-                />
-                {errors.reason && <span className="error-message">{errors.reason}</span>}
+                {position && (
+                  <div className="price-info">
+                    <small>
+                      Entrada: R$ {position.entry_price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} • 
+                      Atual: R$ {(position.current_price || position.entry_price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </small>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="modal-actions">
-              <button type="button" className="btn btn-secondary" onClick={onClose}>
-                Cancelar
-              </button>
-              <button type="submit" className="btn btn-danger">
-                Fechar Posição
-              </button>
+            <div className="field-group">
+              <label className="field-label">Motivo do Fechamento</label>
+              <input
+                type="text"
+                value={formData.reason}
+                onChange={(e) => handleChange('reason', e.target.value)}
+                className={`form-input ${errors.reason ? 'error' : ''}`}
+                placeholder="Ex: Stop loss, Take profit, Realização de lucro..."
+              />
+              {errors.reason && <span className="error-message">{errors.reason}</span>}
             </div>
-          </form>
+
+            {/* P&L Estimado */}
+            <div className="pnl-card">
+              <div className="pnl-header">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 3v18h18"></path>
+                  <path d="M7 12l4-4 4 4 6-6"></path>
+                </svg>
+                <span className="pnl-title">P&L Estimado</span>
+              </div>
+              <div className="pnl-content">
+                <div className={`pnl-amount ${estimatedPnL > 0 ? 'positive' : estimatedPnL < 0 ? 'negative' : 'neutral'}`}>
+                  {estimatedPnL < 0 ? '-' : ''}R$ {Math.abs(estimatedPnL).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </div>
+                <div className="pnl-details">
+                  <span className="pnl-detail-item">
+                    <span className="detail-label">Quantidade:</span>
+                    <span className="detail-value">{formData.quantity} contratos</span>
+                  </span>
+                  <span className="pnl-detail-item">
+                    <span className="detail-label">Diferença por contrato:</span>
+                    <span className={`detail-value ${((position.direction === 'LONG' ? 1 : -1) * (formData.closePrice - position.entry_price) * contractSize) > 0 ? 'positive' : ((position.direction === 'LONG' ? 1 : -1) * (formData.closePrice - position.entry_price) * contractSize) < 0 ? 'negative' : 'neutral'}`}>
+                      {((position.direction === 'LONG' ? 1 : -1) * (formData.closePrice - position.entry_price) * contractSize) < 0 ? '-' : ''}R$ {Math.abs((position.direction === 'LONG' ? 1 : -1) * (formData.closePrice - position.entry_price) * contractSize).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="btn btn-danger" onClick={handleSubmit}>
+            Fechar Posição
+          </button>
         </div>
       </div>
     </div>

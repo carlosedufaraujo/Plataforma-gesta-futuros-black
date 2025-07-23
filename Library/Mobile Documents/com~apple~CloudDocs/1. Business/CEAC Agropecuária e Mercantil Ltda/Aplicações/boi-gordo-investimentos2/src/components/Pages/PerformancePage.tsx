@@ -107,7 +107,7 @@ export default function PerformancePage({ selectedPeriod }: PerformancePageProps
       }
 
       assetStats[asset].contracts += position.quantity;
-      assetStats[asset].exposure += position.entryPrice * position.quantity * (position.contract.startsWith('BGI') ? 330 : 450);
+      assetStats[asset].exposure += position.entry_price * position.quantity * (position.contract.startsWith('BGI') ? 330 : 450);
       assetStats[asset].trades += 1;
 
       if (position.realized_pnl) {

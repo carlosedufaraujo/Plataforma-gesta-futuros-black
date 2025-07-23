@@ -24,43 +24,10 @@ interface User {
 }
 
 export default function BrokerageManagement() {
-  // Lista de usuários disponíveis no sistema
-  const [availableUsers] = useState<User[]>([
-    { id: '1', name: 'João Silva', email: 'joao@email.com', cpf: '123.456.789-00' },
-    { id: '2', name: 'Maria Santos', email: 'maria@email.com', cpf: '987.654.321-00' },
-    { id: '3', name: 'Pedro Costa', email: 'pedro@email.com', cpf: '456.789.123-00' }
-  ]);
+  // Estados vazios - dados virão do contexto/API
+  const [availableUsers] = useState<User[]>([]);
 
-  const [brokerages, setBrokerages] = useState<Brokerage[]>([
-    {
-      id: '1',
-      name: 'XP Investimentos',
-      cnpj: '02.332.886/0001-04',
-      assessor: 'Roberto Silva',
-      phone: '(11) 3003-3000',
-      email: 'assessoria@xpi.com.br',
-      milhoFees: 2.50,
-      boiFees: 3.20,
-      taxes: 0.35,
-      otherFees: 15.80,
-      linkedUsers: [
-        { id: '1', name: 'João Silva', email: 'joao@email.com', cpf: '123.456.789-00' }
-      ]
-    },
-    {
-      id: '2',
-      name: 'Rico Investimentos',
-      cnpj: '03.814.055/0001-74',
-      assessor: 'Ana Paula Costa',
-      phone: '(11) 2050-5000',
-      email: 'suporte@rico.com.vc',
-      milhoFees: 2.80,
-      boiFees: 3.50,
-      taxes: 0.28,
-      otherFees: 16.20,
-      linkedUsers: []
-    }
-  ]);
+  const [brokerages, setBrokerages] = useState<Brokerage[]>([]);
 
   const [selectedBrokerageForUsers, setSelectedBrokerageForUsers] = useState<string | null>(null);
   const [showUserLinkModal, setShowUserLinkModal] = useState(false);
