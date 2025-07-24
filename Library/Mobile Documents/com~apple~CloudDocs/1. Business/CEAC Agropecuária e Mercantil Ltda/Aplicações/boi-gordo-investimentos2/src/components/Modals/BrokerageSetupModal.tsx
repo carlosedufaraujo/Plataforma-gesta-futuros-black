@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useUser } from '@/contexts/UserContext';
-import { useData } from '@/contexts/DataContext';
+import React, { useState, useEffect } from 'react';
+import { X, Building, User, Phone, Mail, MapPin, DollarSign } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { useHybridData } from '@/contexts/HybridDataContext';
 
 interface BrokerageSetupModalProps {
   isOpen: boolean;
@@ -20,10 +21,9 @@ interface BrokerageConfig {
 }
 
 export default function BrokerageSetupModal({ isOpen, onClose, isFirstSetup = false }: BrokerageSetupModalProps) {
-  const { currentSession, updateSelectedBrokerage } = useUser();
-  const { fetchData } = useData();
+  const { brokerages, selectedBrokerage: currentSelectedBrokerage, setSelectedBrokerage } = useHybridData();
   
-  const [selectedBrokerage, setSelectedBrokerage] = useState('');
+  const [selectedBrokerage, setSelectedBrokerageLocal] = useState('');
   const [config, setConfig] = useState<BrokerageConfig>({
     brokerageId: '',
     environment: 'sandbox',
@@ -39,65 +39,48 @@ export default function BrokerageSetupModal({ isOpen, onClose, isFirstSetup = fa
     }
   }, [isOpen, selectedBrokerage]);
 
-  const handleTestConnection = async () => {
-    setIsLoading(true);
-    setConnectionStatus('testing');
-    setErrorMessage('');
-
+  const handleSave = async () => {
     try {
-      // Simular teste de conexão - aqui integraria com API real da corretora
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (!selectedBrokerage) {
+        toast.error('Selecione uma corretora');
+        return;
+      }
+
+      const selectedBrokerageData = brokerages.find(b => b.id === selectedBrokerage);
+      if (!selectedBrokerageData) {
+        toast.error('Corretora não encontrada');
+        return;
+      }
+
+      // Atualizar corretora selecionada
+      setSelectedBrokerage(selectedBrokerageData);
       
-      // Validações básicas
-      if (!config.apiKey || !config.secretKey) {
-        throw new Error('API Key e Secret Key são obrigatórios');
-      }
-
-      if (config.apiKey.length < 10) {
-        throw new Error('API Key deve ter pelo menos 10 caracteres');
-      }
-
-      setConnectionStatus('success');
+      toast.success('Configuração salva com sucesso!');
+      onClose();
     } catch (error) {
-      setConnectionStatus('error');
-      setErrorMessage(error.message || 'Erro ao testar conexão');
-    } finally {
-      setIsLoading(false);
+      console.error('Erro ao salvar configuração:', error);
+      toast.error('Erro ao salvar configuração');
     }
   };
 
-  const handleSaveConfiguration = async () => {
-    if (connectionStatus !== 'success') {
-      setErrorMessage('Teste a conexão antes de salvar');
-      return;
-    }
-
-    setIsLoading(true);
+  const handleTestConnection = async () => {
     try {
-      // Aqui salvaria a configuração no backend
-      const selectedBrokerageData = currentSession.availableBrokerages.find(
-        b => b.id === selectedBrokerage
-      );
-
-      if (selectedBrokerageData) {
-        await updateSelectedBrokerage(selectedBrokerageData);
-        
-        // Sincronizar dados após configuração
-        if (config.autoSync) {
-          await fetchData();
-        }
-
-        onClose();
-        
-        // Mostrar notificação de sucesso
-        if (window.showToast) {
-          window.showToast('Corretora configurada com sucesso!', 'success');
-        }
+      if (!selectedBrokerage) {
+        toast.error('Selecione uma corretora primeiro');
+        return;
       }
+
+      const selectedBrokerageData = brokerages.find(b => b.id === selectedBrokerage);
+      if (!selectedBrokerageData) {
+        toast.error('Corretora não encontrada');
+        return;
+      }
+
+      // Simular teste de conexão
+      toast.success(`Conexão com ${selectedBrokerageData.nome} testada com sucesso!`);
     } catch (error) {
-      setErrorMessage('Erro ao salvar configuração');
-    } finally {
-      setIsLoading(false);
+      console.error('Erro ao testar conexão:', error);
+      toast.error('Erro ao testar conexão');
     }
   };
 
@@ -144,8 +127,8 @@ export default function BrokerageSetupModal({ isOpen, onClose, isFirstSetup = fa
 
   if (!isOpen) return null;
 
-  const selectedBrokerageData = currentSession.availableBrokerages.find(b => b.id === selectedBrokerage);
-  const brokerageInstructions = selectedBrokerage ? getBrokerageInstructions(selectedBrokerage) : null;
+  const selectedBrokerageData = currentSelectedBrokerage;
+  const brokerageInstructions = selectedBrokerageData ? getBrokerageInstructions(selectedBrokerageData.id) : null;
 
   return (
     <div className="modal-overlay">
@@ -177,11 +160,11 @@ export default function BrokerageSetupModal({ isOpen, onClose, isFirstSetup = fa
           <div className="form-section">
             <h4>Selecionar Corretora</h4>
             <div className="brokerage-grid">
-              {currentSession.availableBrokerages.map(brokerage => (
+              {brokerages.map(brokerage => (
                 <div
                   key={brokerage.id}
-                  className={`brokerage-card ${selectedBrokerage === brokerage.id ? 'selected' : ''}`}
-                  onClick={() => setSelectedBrokerage(brokerage.id)}
+                  className={`brokerage-card ${selectedBrokerage?.id === brokerage.id ? 'selected' : ''}`}
+                  onClick={() => setSelectedBrokerageLocal(brokerage.id)}
                 >
                   <div className="brokerage-logo">
                     {brokerage.nome.charAt(0).toUpperCase()}
@@ -199,9 +182,9 @@ export default function BrokerageSetupModal({ isOpen, onClose, isFirstSetup = fa
           </div>
 
           {/* Configuração da API */}
-          {selectedBrokerage && (
+          {selectedBrokerageData && (
             <div className="form-section">
-              <h4>Configuração de API - {selectedBrokerageData?.nome}</h4>
+              <h4>Configuração de API - {selectedBrokerageData.nome}</h4>
               
               {brokerageInstructions && (
                 <div className="api-instructions">
@@ -304,7 +287,7 @@ export default function BrokerageSetupModal({ isOpen, onClose, isFirstSetup = fa
           )}
           <button
             className={`btn btn-primary ${isLoading ? 'loading' : ''}`}
-            onClick={handleSaveConfiguration}
+            onClick={handleSave}
             disabled={!selectedBrokerage || connectionStatus !== 'success' || isLoading}
           >
             {isFirstSetup ? 'Configurar e Começar' : 'Salvar Configuração'}

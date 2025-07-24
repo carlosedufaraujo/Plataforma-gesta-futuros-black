@@ -1,10 +1,11 @@
 'use client';
 
-import { useNetPositions } from '@/hooks/useNetPositions';
-import { useData } from '@/contexts/DataContext';
+import React from 'react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
+import { useHybridData } from '@/contexts/HybridDataContext';
 
 export default function NetPositionDemo() {
-  const { positions } = useData();
+  const { positions } = useHybridData();
   const { netPositions, netStats, formatNetQuantity, getDirectionColor } = useNetPositions();
 
   return (

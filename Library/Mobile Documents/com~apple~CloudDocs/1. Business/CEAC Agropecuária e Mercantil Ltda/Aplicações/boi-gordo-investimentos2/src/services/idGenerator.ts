@@ -206,6 +206,23 @@ class IDGenerator {
   }
 
   /**
+   * Define manualmente o contador para um tipo específico
+   * Útil para sincronizar com dados existentes do banco
+   */
+  setCounter(type: keyof IDCounters, value: number): void {
+    this.counters[type] = value;
+    this.saveCounters();
+    console.log(`📊 Contador ${type} definido para: ${value}`);
+  }
+
+  /**
+   * Define especificamente o contador de transações
+   */
+  setTransactionCounter(value: number): void {
+    this.setCounter('transactions', value);
+  }
+
+  /**
    * Obtém estatísticas dos contadores
    */
   getCounterStats(): IDCounters & { total: number } {

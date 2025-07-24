@@ -1,20 +1,21 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useData } from '@/contexts/DataContext';
-import { useUser } from '@/contexts/UserContext';
+import React, { useState, useMemo } from 'react';
+import { TrendingUp, TrendingDown, DollarSign, BarChart3 } from 'lucide-react';
+import { useHybridData } from '@/contexts/HybridDataContext';
 import TabNavigation from '@/components/Common/TabNavigation';
+import DataTable from '@/components/Common/DataTable';
+import StatusBadge from '@/components/Common/StatusBadge';
+
+type PerformanceTabType = 'overview' | 'detailed' | 'analysis';
 
 interface PerformancePageProps {
   selectedPeriod: string;
 }
 
-type PerformanceTabType = 'overview' | 'assets' | 'temporal' | 'risk' | 'operational';
-
 export default function PerformancePage({ selectedPeriod }: PerformancePageProps) {
   const [activeTab, setActiveTab] = useState<PerformanceTabType>('overview');
-  const { positions, transactions, options } = useData();
-  const { currentSession } = useUser();
+  const { positions, transactions, options, currentUser } = useHybridData();
 
   const tabs = [
     { 
@@ -72,6 +73,8 @@ export default function PerformancePage({ selectedPeriod }: PerformancePageProps
 
   // Calcular dados de performance baseados nos dados reais
   const performanceData = useMemo(() => {
+    console.log('🔄 PERFORMANCE PAGE: Recalculando métricas - positions:', positions.length, 'transactions:', transactions.length);
+    
     if (!positions.length && !transactions.length) {
       return {
         assetPerformance: [],
@@ -384,7 +387,7 @@ export default function PerformancePage({ selectedPeriod }: PerformancePageProps
           <div className="risk-metric">
             <div className="risk-label">Posições Ativas</div>
             <div className="risk-value">
-              {positions.filter(p => p.status === 'OPEN').length}
+              {positions.filter(p => (p.status === 'EXECUTADA' || p.status === 'EM_ABERTO')).length}
             </div>
           </div>
           <div className="risk-metric">
@@ -455,7 +458,7 @@ export default function PerformancePage({ selectedPeriod }: PerformancePageProps
       />
 
       <div className="performance-content">
-        {!currentSession.user ? (
+        {!currentUser ? (
           renderUserLoading()
         ) : positions.length === 0 && transactions.length === 0 ? (
           renderEmptyState('Sem dados de performance', 'Cadastre algumas posições para ver análises de performance aqui.')

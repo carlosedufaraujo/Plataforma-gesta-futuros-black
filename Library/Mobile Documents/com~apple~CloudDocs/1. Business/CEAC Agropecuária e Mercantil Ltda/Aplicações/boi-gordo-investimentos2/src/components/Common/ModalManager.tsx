@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Target, TrendingUp, Settings, BarChart3 } from 'lucide-react';
 import NewPositionModal from '@/components/Modals/NewPositionModal';
 import NewOptionModal from '@/components/Modals/NewOptionModal';
-import UserRegistrationModal from '@/components/Modals/UserRegistrationModal';
-import BrokerageRegistrationModal from '@/components/Modals/BrokerageRegistrationModal';
-import { useData } from '@/contexts/DataContext';
+import StrategyModal from '@/components/Modals/StrategyModal';
+import AnalysisModal from '@/components/Modals/AnalysisModal';
+import SettingsModal from '@/components/Modals/SettingsModal';
+import { useHybridData } from '@/contexts/HybridDataContext';
 
 interface ModalState {
   newPosition: boolean;
@@ -15,7 +17,7 @@ interface ModalState {
 }
 
 export default function ModalManager() {
-  const { addPosition, addOption } = useData();
+  const { addPosition, addOption } = useHybridData();
   const [modals, setModals] = useState<ModalState>({
     newPosition: false,
     newOption: false,

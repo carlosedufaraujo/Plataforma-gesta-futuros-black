@@ -2,7 +2,7 @@ export type ContractType = 'BGI' | 'CCM' | 'ICF' | 'DOL' | 'IND';
 export type PositionDirection = 'LONG' | 'SHORT';
 export type OptionType = 'CALL' | 'PUT';
 export type TransactionType = 'BUY' | 'SELL' | 'EXERCISE' | 'EXPIRE';
-export type PositionStatus = 'OPEN' | 'CLOSED' | 'PARTIAL' | 'NETTED' | 'CONSOLIDATED';
+export type PositionStatus = 'EXECUTADA' | 'EM_ABERTO' | 'CANCELADA' | 'FECHADA' | 'NETTED';
 
 export interface User {
   id: string;

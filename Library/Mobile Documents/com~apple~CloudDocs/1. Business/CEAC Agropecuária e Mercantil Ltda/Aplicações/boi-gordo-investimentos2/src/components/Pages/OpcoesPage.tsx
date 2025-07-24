@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { OptionTabType } from '@/types';
-import DataTable from '@/components/Common/DataTable';
+import React, { useState, useMemo } from 'react';
+import { Plus, TrendingUp, TrendingDown, AlertTriangle, DollarSign, Calendar } from 'lucide-react';
 import TabNavigation from '@/components/Common/TabNavigation';
-import { useData } from '@/contexts/DataContext';
+import DataTable from '@/components/Common/DataTable';
+import StatusBadge from '@/components/Common/StatusBadge';
+import { useHybridData } from '@/contexts/HybridDataContext';
 import StrategyModal from '@/components/Modals/StrategyModal';
 import NewOptionModal from '@/components/Modals/NewOptionModal';
 import { Option } from '@/types';
@@ -15,7 +16,7 @@ interface OpcoesPageProps {
 
 export default function OpcoesPage({ selectedPeriod }: OpcoesPageProps) {
   const [activeTab, setActiveTab] = useState<OptionTabType>('ativas');
-  const { options, addOption, addMultipleOptions, updateOption } = useData();
+  const { options, addOption, addMultipleOptions, updateOption } = useHybridData();
   const [showNewOptionModal, setShowNewOptionModal] = useState(false);
   const [showStrategyModal, setShowStrategyModal] = useState(false);
   const [editingOption, setEditingOption] = useState<Option | null>(null);

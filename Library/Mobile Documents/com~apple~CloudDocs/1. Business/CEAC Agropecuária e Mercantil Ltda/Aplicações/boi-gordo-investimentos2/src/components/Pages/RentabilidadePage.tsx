@@ -1,76 +1,118 @@
 'use client';
 
-import { useRef, useEffect, useState, useMemo } from 'react';
-import Chart from 'chart.js/auto';
-import { useData } from '@/contexts/DataContext';
-import { useUser } from '@/contexts/UserContext';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { TrendingUp, TrendingDown, DollarSign, BarChart3, PieChart, Target } from 'lucide-react';
+import { formatCurrency, formatPercentage } from '@/utils/formatters';
+import { useHybridData } from '@/contexts/HybridDataContext';
+import { Chart, registerables } from 'chart.js';
+
+// Registrar componentes do Chart.js
+Chart.register(...registerables);
 
 interface RentabilidadePageProps {
-  selectedPeriod?: string;
+  selectedPeriod: string;
 }
 
-export default function RentabilidadePage({ selectedPeriod = '30d' }: RentabilidadePageProps) {
+export default function RentabilidadePage({ selectedPeriod }: RentabilidadePageProps) {
+  const [activeTab, setActiveTab] = useState<'overview' | 'detailed'>('overview');
+  
+  const { positions, transactions, options, currentUser } = useHybridData();
+  
+  // Referencias para os gráficos
   const capitalChartRef = useRef<HTMLCanvasElement>(null);
   const plByContractChartRef = useRef<HTMLCanvasElement>(null);
-  const { positions, transactions, options } = useData();
-  const { currentSession } = useUser();
 
   // Calcular dados reais baseados nas posições e transações
   const portfolioData = useMemo(() => {
-    if (!currentSession.user) {
+    console.log('🔄 RENTABILIDADE PAGE: Recalculando portfolio - positions:', positions.length, 'transactions:', transactions.length);
+    
+    if (!currentUser) {
       return {
         totalValue: 0,
         dailyPnL: 0,
         totalPnL: 0,
         totalPnLPercentage: 0,
         initialCapital: 0,
-        currentCapital: 0
+        totalInvested: 0,
+        totalRealized: 0,
+        openPositionsValue: 0,
+        closedPositionsValue: 0,
+        winRate: 0,
+        avgWin: 0,
+        avgLoss: 0,
+        bestTrade: 0,
+        worstTrade: 0,
+        totalTrades: 0,
+        profitableTrades: 0,
+        losingTrades: 0,
+        sharpeRatio: 0,
+        maxDrawdown: 0,
+        roi: 0
       };
     }
 
-    // Capital inicial do usuário
-    const initialCapital = 200000; // Pode vir das configurações do usuário
+    // Filtrar posições do usuário atual
+    const userPositions = positions.filter(p => p.user_id === currentUser.id);
+    const userTransactions = transactions.filter(t => t.userId === currentUser.id);
+
+    // Calcular métricas básicas
+    const openPositions = userPositions.filter(p => p.status === 'EXECUTADA' || p.status === 'EM_ABERTO');
+    const closedPositions = userPositions.filter(p => p.status === 'FECHADA');
+
+    const totalInvested = userTransactions
+      .filter(t => t.type === 'COMPRA')
+      .reduce((sum, t) => sum + t.total, 0);
+
+    const totalRealized = closedPositions
+      .reduce((sum, p) => sum + (p.realized_pnl || 0), 0);
+
+    const openPositionsValue = openPositions
+      .reduce((sum, p) => sum + (p.unrealized_pnl || 0), 0);
+
+    const totalPnL = totalRealized + openPositionsValue;
+    const totalPnLPercentage = totalInvested > 0 ? (totalPnL / totalInvested) * 100 : 0;
+
+    // Calcular win rate
+    const profitableTrades = closedPositions.filter(p => (p.realized_pnl || 0) > 0).length;
+    const losingTrades = closedPositions.filter(p => (p.realized_pnl || 0) < 0).length;
+    const totalTrades = closedPositions.length;
+    const winRate = totalTrades > 0 ? (profitableTrades / totalTrades) * 100 : 0;
+
+    // Calcular médias
+    const wins = closedPositions.filter(p => (p.realized_pnl || 0) > 0);
+    const losses = closedPositions.filter(p => (p.realized_pnl || 0) < 0);
     
-    // Calcular P&L realizado das transações
-    const realizedPnL = transactions.reduce((total, transaction) => {
-      // Lógica para calcular P&L realizado baseado nas transações
-      return total;
-    }, 0);
+    const avgWin = wins.length > 0 ? wins.reduce((sum, p) => sum + (p.realized_pnl || 0), 0) / wins.length : 0;
+    const avgLoss = losses.length > 0 ? losses.reduce((sum, p) => sum + (p.realized_pnl || 0), 0) / losses.length : 0;
 
-    // Calcular P&L não realizado das posições abertas
-    const unrealizedPnL = positions
-      .filter(pos => pos.status === 'OPEN')
-      .reduce((total, position) => {
-        if (position.unrealized_pnl) {
-          return total + position.unrealized_pnl;
-        }
-        return total;
-      }, 0);
-
-    const totalPnL = realizedPnL + unrealizedPnL;
-    const currentCapital = initialCapital + totalPnL;
-    const totalPnLPercentage = initialCapital > 0 ? (totalPnL / initialCapital) * 100 : 0;
-
-    // P&L diário (últimas 24h) - seria melhor vir do backend
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const dailyPnL = transactions
-      .filter(t => new Date(t.createdAt) >= today)
-      .reduce((total, transaction) => {
-        // Calcular P&L das transações do dia
-        return total;
-      }, 0);
+    // Melhor e pior trade
+    const pnls = closedPositions.map(p => p.realized_pnl || 0);
+    const bestTrade = pnls.length > 0 ? Math.max(...pnls) : 0;
+    const worstTrade = pnls.length > 0 ? Math.min(...pnls) : 0;
 
     return {
-      totalValue: currentCapital,
-      dailyPnL,
+      totalValue: totalInvested + totalPnL,
+      dailyPnL: 0, // Implementar cálculo diário
       totalPnL,
       totalPnLPercentage,
-      initialCapital,
-      currentCapital
+      initialCapital: totalInvested,
+      totalInvested,
+      totalRealized,
+      openPositionsValue,
+      closedPositionsValue: totalRealized,
+      winRate,
+      avgWin,
+      avgLoss,
+      bestTrade,
+      worstTrade,
+      totalTrades,
+      profitableTrades,
+      losingTrades,
+      sharpeRatio: 0, // Implementar cálculo Sharpe
+      maxDrawdown: 0, // Implementar cálculo drawdown
+      roi: totalPnLPercentage
     };
-  }, [positions, transactions, currentSession.user]);
+  }, [positions, transactions, currentUser]);
 
   // Dados mensais baseados em transações reais
   const monthlyData = useMemo(() => {
@@ -312,7 +354,7 @@ export default function RentabilidadePage({ selectedPeriod = '30d' }: Rentabilid
   }, [monthlyData, plByContractData, portfolioData, selectedPeriod]);
 
   // Estado vazio quando não há dados
-  if (!currentSession.user) {
+  if (!currentUser) {
     return (
       <div className="empty-state">
         <div className="empty-icon">
@@ -395,7 +437,7 @@ export default function RentabilidadePage({ selectedPeriod = '30d' }: Rentabilid
         
         <div className="metric-card">
           <div className="metric-label">Posições Ativas</div>
-          <div className="metric-value">{positions.filter(p => p.status === 'OPEN').length}</div>
+          <div className="metric-value">{positions.filter(p => (p.status === 'EXECUTADA' || p.status === 'EM_ABERTO')).length}</div>
           <div className="metric-change neutral">
             {positions.length} total
           </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import ContractExpirations from '@/components/Settings/ContractExpirations';
+import ContractManagement from '@/components/Settings/ContractManagement';
 import UserManagement from '@/components/Settings/UserManagement';
 import BrokerageManagement from '@/components/Settings/BrokerageManagement';
 import TabNavigation from '@/components/Common/TabNavigation';
@@ -327,7 +327,7 @@ export default function ConfiguracoesPage() {
         );
       
       case 'contratos':
-        return <ContractExpirations />;
+        return <ContractManagement />;
       
       default:
         return <UserManagement />;

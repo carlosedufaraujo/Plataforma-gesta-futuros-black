@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { useData } from '@/contexts/DataContext';
+import React from 'react';
+import { Plus } from 'lucide-react';
+import { useHybridData } from '@/contexts/HybridDataContext';
 import { useNetPositions } from '@/hooks/useNetPositions';
 
 export default function NetTestComponent() {
-  const { addPosition, positions } = useData();
+  const { addPosition, positions } = useHybridData();
   const { netPositions, formatNetQuantity } = useNetPositions();
-  const [testContract] = useState('BGIK25');
+  const [testContract] = React.useState('BGIK25');
 
   const addLongPosition = () => {
     addPosition({

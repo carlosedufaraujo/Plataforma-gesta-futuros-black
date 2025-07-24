@@ -2,24 +2,21 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import '../styles/globals.css';
 import { UserProvider } from '@/contexts/UserContext';
-import { DataProvider } from '@/contexts/DataContext';
+import { HybridDataProvider } from '@/contexts/HybridDataContext';
 import OnboardingCheck from '@/components/Layout/OnboardingCheck';
 
-// Importar utilitário de inspeção em desenvolvimento
-if (process.env.NODE_ENV === 'development') {
-  import('@/utils/inspectLocalStorage');
-  import('@/utils/seedData');
-  import('@/utils/clearData');
-  import('@/utils/autoCleanMockData'); // Limpeza automática
-}
+// Remover imports dos arquivos que foram deletados
+// if (process.env.NODE_ENV === 'development') {
+//   import('@/utils/inspectLocalStorage');
+//   import('@/utils/seedData');
+//   import('@/utils/clearData');
+// }
 
 const inter = Inter({ subsets: ['latin'] });
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'ACEX Capital Markets - Sistema de Trading de Futuros',
-  description: 'Sistema completo para trading de futuros agropecuários com dashboard de análise e gestão de risco.',
-  author: 'CEAC Agropecuária e Mercantil Ltda',
-  keywords: 'trading, futuros, agronegócio, B3, investimentos, boi gordo, milho, soja'
+  description: 'Sistema completo de trading de contratos futuros',
 };
 
 export default function RootLayout({
@@ -41,10 +38,10 @@ export default function RootLayout({
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <UserProvider>
-          <DataProvider>
+          <HybridDataProvider>
             {children}
             <OnboardingCheck />
-          </DataProvider>
+          </HybridDataProvider>
         </UserProvider>
       </body>
     </html>

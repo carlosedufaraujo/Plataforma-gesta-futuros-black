@@ -1,14 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import { useData } from '@/contexts/DataContext';
+import React, { useState } from 'react';
+import { Download, Upload, Trash2, Database, RefreshCw } from 'lucide-react';
+import { useHybridData } from '@/contexts/HybridDataContext';
 import { localStorageService } from '@/services/localStorage';
 
 export default function DataManager() {
-  const { 
-    positions, options, transactions, users, brokerages, 
-    clearAllData, exportData, importData 
-  } = useData();
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const {
+    positions, options, transactions, users, brokerages,
+    clearAllData, exportData, importData, fetchData
+  } = useHybridData();
   
   const [exportedData, setExportedData] = useState('');
   const [importedData, setImportedData] = useState('');

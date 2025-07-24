@@ -6,7 +6,10 @@ import DataTable from '@/components/Common/DataTable';
 import TabNavigation from '@/components/Common/TabNavigation';
 import NewPositionModal from '@/components/Modals/NewPositionModal';
 import ClosePositionModal from '@/components/Modals/ClosePositionModal';
-import { useData } from '@/contexts/DataContext';
+import ViewTransactionModal from '@/components/Modals/ViewTransactionModal';
+import EditTransactionModal from '@/components/Modals/EditTransactionModal';
+import DeleteTransactionModal from '@/components/Modals/DeleteTransactionModal';
+import { useHybridData } from '@/contexts/HybridDataContext';
 import { useNetPositions } from '@/hooks/useNetPositions';
 
 interface PosicoesPageProps {
@@ -14,16 +17,24 @@ interface PosicoesPageProps {
 }
 
 export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
-  const { positions, transactions, addPosition, updatePosition, closePosition } = useData();
+  const { positions, transactions, addPosition, addTransaction, updatePosition, closePosition, updateTransaction, deleteTransaction } = useHybridData();
   const { netPositions, netStats, formatNetQuantity, getDirectionColor } = useNetPositions();
   const [activeTab, setActiveTab] = useState<PositionTabType>('gestao');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  
+  // Estados dos modais de transação
+  const [isViewTransactionModalOpen, setIsViewTransactionModalOpen] = useState(false);
+  const [isEditTransactionModalOpen, setIsEditTransactionModalOpen] = useState(false);
+  const [isDeleteTransactionModalOpen, setIsDeleteTransactionModalOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [editingPosition, setEditingPosition] = useState<Position | null>(null);
   const [showNewPositionModal, setShowNewPositionModal] = useState(false);
   const [isClosePositionModalOpen, setIsClosePositionModalOpen] = useState(false);
   const [positionToClose, setPositionToClose] = useState<Position | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedConsolidated, setSelectedConsolidated] = useState<any>(null);
+  
+
 
   // Opções de período para descrição
   const periodOptions = [
@@ -174,6 +185,9 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
   };
 
   const handleNewPosition = (positionData: Omit<Position, 'id'>) => {
+    console.log('🔥 PÁGINA POSIÇÕES: handleNewPosition chamada com dados:', positionData);
+    console.log('🔥 PÁGINA POSIÇÕES: addPosition function type:', typeof addPosition);
+    console.log('🔥 PÁGINA POSIÇÕES: Chamando addPosition...');
     addPosition(positionData);
     setShowNewPositionModal(false);
   };
@@ -263,25 +277,127 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
     setPositionToClose(null);
   };
 
-  const handleClosePositionSubmit = (closeData: any) => {
+  const handleClosePositionSubmit = async (closeData: any) => {
     if (!positionToClose) return;
 
-    closePosition(positionToClose.id, closeData.closePrice);
-    
-    // Feedback visual
-    const toast = document.createElement('div');
-    toast.textContent = `✅ Posição ${positionToClose.contract} fechada com sucesso!`;
-    toast.style.cssText = `
-      position: fixed; top: 70px; right: 20px; z-index: 10002;
-      background: var(--color-success); color: white; padding: 12px 20px;
-      border-radius: 8px; font-weight: 500; animation: slideIn 0.3s ease-out;
-    `;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-      toast.style.animation = 'fadeOut 0.3s ease-out';
-      setTimeout(() => document.body.removeChild(toast), 300);
-    }, 3000);
+    try {
+      // Verificar se é uma posição consolidada
+      if ((positionToClose as any)._isConsolidated) {
+        console.log('🔥 Fechando posição consolidada:', {
+          contract: positionToClose.contract,
+          quantity: closeData.quantity,
+          closePrice: closeData.closePrice
+        });
+
+        const netPosition = (positionToClose as any)._netPosition;
+        const quantityToClose = closeData.quantity;
+        const closePrice = closeData.closePrice;
+
+        let quantityRemaining = quantityToClose;
+        
+        // Ordenar posições por direção (fechar primeiro as posições contrárias à direção líquida)
+        const sortedPositions = [...netPosition.positions].sort((a, b) => {
+          if (netPosition.netDirection === 'LONG') {
+            // Se líquido é LONG, fechar primeiro as SHORT
+            return a.direction === 'SHORT' ? -1 : 1;
+          } else {
+            // Se líquido é SHORT, fechar primeiro as LONG
+            return a.direction === 'LONG' ? -1 : 1;
+          }
+        });
+
+        for (const position of sortedPositions) {
+          if (quantityRemaining <= 0) break;
+
+          const positionQuantity = position.quantity;
+          const quantityToCloseFromThis = Math.min(quantityRemaining, positionQuantity);
+
+          console.log(`🎯 Fechando ${quantityToCloseFromThis} de ${positionQuantity} da posição ${position.id}`);
+
+          if (quantityToCloseFromThis === positionQuantity) {
+            // Fechar posição completamente
+            await closePosition(position.id, closePrice);
+          } else {
+            // Fechamento parcial - criar transação de fechamento e atualizar quantidade
+            const closeTransactionData = {
+              userId: position.user_id,
+              brokerageId: position.brokerage_id,
+              positionId: position.id,
+              date: new Date().toISOString(),
+              type: position.direction === 'LONG' ? 'VENDA' : 'COMPRA',
+              contract: position.contract,
+              quantity: quantityToCloseFromThis,
+              price: closePrice,
+              fees: 0,
+              total: quantityToCloseFromThis * closePrice,
+              status: 'EXECUTADA'
+            };
+
+            await addTransaction(closeTransactionData);
+
+            // Atualizar quantidade da posição
+            const updatedQuantity = positionQuantity - quantityToCloseFromThis;
+            await updatePosition(position.id, { 
+              quantity: updatedQuantity,
+              status: updatedQuantity > 0 ? 'EM_ABERTO' : 'FECHADA'
+            });
+          }
+
+          quantityRemaining -= quantityToCloseFromThis;
+        }
+
+        // Feedback visual para posição consolidada
+        const toast = document.createElement('div');
+        toast.textContent = `✅ Fechadas ${quantityToClose} unidades de ${positionToClose.contract}!`;
+        toast.style.cssText = `
+          position: fixed; top: 70px; right: 20px; z-index: 10002;
+          background: var(--color-success); color: white; padding: 12px 20px;
+          border-radius: 8px; font-weight: 500; animation: slideIn 0.3s ease-out;
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+          toast.style.animation = 'fadeOut 0.3s ease-out';
+          setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+
+      } else {
+        // Posição individual normal
+        await closePosition(positionToClose.id, closeData.closePrice);
+        
+        // Feedback visual
+        const toast = document.createElement('div');
+        toast.textContent = `✅ Posição ${positionToClose.contract} fechada com sucesso!`;
+        toast.style.cssText = `
+          position: fixed; top: 70px; right: 20px; z-index: 10002;
+          background: var(--color-success); color: white; padding: 12px 20px;
+          border-radius: 8px; font-weight: 500; animation: slideIn 0.3s ease-out;
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+          toast.style.animation = 'fadeOut 0.3s ease-out';
+          setTimeout(() => document.body.removeChild(toast), 300);
+        }, 3000);
+      }
+
+    } catch (error) {
+      console.error('❌ Erro ao fechar posição:', error);
+      
+      const errorToast = document.createElement('div');
+      errorToast.textContent = `❌ Erro ao fechar posição. Tente novamente.`;
+      errorToast.style.cssText = `
+        position: fixed; top: 70px; right: 20px; z-index: 10002;
+        background: var(--color-danger); color: white; padding: 12px 20px;
+        border-radius: 8px; font-weight: 500; animation: slideIn 0.3s ease-out;
+      `;
+      document.body.appendChild(errorToast);
+      
+      setTimeout(() => {
+        errorToast.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => document.body.removeChild(errorToast), 300);
+      }, 3000);
+    }
 
     handleClosePositionModalClose();
   };
@@ -295,10 +411,74 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
     }
   };
 
+  // Funções dos modais de transação
+  const handleViewTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setIsViewTransactionModalOpen(true);
+  };
+
+  const handleEditTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setIsEditTransactionModalOpen(true);
+  };
+
+  const handleDeleteTransaction = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setIsDeleteTransactionModalOpen(true);
+  };
+
+  const handleSaveTransaction = async (id: string, updates: Partial<Transaction>) => {
+    try {
+      await updateTransaction(id, updates);
+      
+      // Feedback visual
+      const toast = document.createElement('div');
+      toast.textContent = '✅ Transação atualizada com sucesso!';
+      toast.style.cssText = `
+        position: fixed; top: 70px; right: 20px; z-index: 10002;
+        background: var(--color-success); color: white; padding: 12px 20px;
+        border-radius: 8px; font-weight: 500; animation: slideIn 0.3s ease-out;
+      `;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 3000);
+    } catch (error) {
+      console.error('Erro ao atualizar transação:', error);
+    }
+  };
+
+  const handleConfirmDeleteTransaction = async (id: string) => {
+    try {
+      await deleteTransaction(id);
+      
+      // Feedback visual
+      const toast = document.createElement('div');
+      toast.textContent = '✅ Transação excluída com sucesso!';
+      toast.style.cssText = `
+        position: fixed; top: 70px; right: 20px; z-index: 10002;
+        background: var(--color-negative); color: white; padding: 12px 20px;
+        border-radius: 8px; font-weight: 500; animation: slideIn 0.3s ease-out;
+      `;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 3000);
+    } catch (error) {
+      console.error('Erro ao excluir transação:', error);
+    }
+  };
+
+
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'gestao':
-        const openPositionsForGestao = filteredPositions.filter(p => p.status === 'OPEN');
+        const openPositionsForGestao = filteredPositions.filter(p => p.status === 'EXECUTADA' || p.status === 'EM_ABERTO');
         
         return (
           <div className="card">
@@ -328,7 +508,6 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
                     <span 
                       key="direction" 
                       className={`direction-indicator ${netPosition.netDirection.toLowerCase()}`}
-                      style={{ color: getDirectionColor(netPosition.netDirection) }}
                     >
                       {netPosition.netDirection}
                     </span>,
@@ -350,7 +529,7 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
                     
                     // P&L Acumulado
                     <span key="pnl" className={netPosition.unrealizedPnL >= 0 ? 'positive' : 'negative'}>
-                      {netPosition.unrealizedPnL >= 0 ? '+' : ''}R$ {Math.abs(netPosition.unrealizedPnL).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+                      {netPosition.unrealizedPnL < 0 ? '-' : ''}R$ {Math.abs(netPosition.unrealizedPnL).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
                     </span>,
                     
                     // Exposição
@@ -377,21 +556,37 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
                       <button 
                         className="btn btn-danger btn-sm"
                         onClick={() => {
-                          // Fechar todas as posições deste contrato
-                          const confirmMessage = `Fechar todas as ${netPosition.positions.length} posições de ${netPosition.contract}?`;
-                          if (confirm(confirmMessage)) {
-                            netPosition.positions.forEach(position => {
-                              handleClosePosition(position.id, position.current_price || position.entry_price);
-                            });
-                          }
+                          // Usar o modal original com uma posição "virtual"
+                          const consolidatedPosition = {
+                            id: `consolidated-${netPosition.contract}`,
+                            contract: netPosition.contract,
+                            direction: netPosition.netDirection,
+                            quantity: Math.abs(netPosition.netQuantity),
+                            entry_price: netPosition.positions[0]?.entry_price || 0,
+                            current_price: netPosition.positions[0]?.current_price || netPosition.positions[0]?.entry_price || 0,
+                            user_id: netPosition.positions[0]?.user_id || '',
+                            brokerage_id: netPosition.positions[0]?.brokerage_id || '',
+                            date: netPosition.positions[0]?.date || new Date().toISOString(),
+                            fees: 0,
+                            status: 'EM_ABERTO' as const,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString(),
+                            realized_pnl: null,
+                            unrealized_pnl: null,
+                            contract_id: netPosition.positions[0]?.contract_id || null,
+                            _isConsolidated: true,
+                            _netPosition: netPosition
+                          };
+                          setPositionToClose(consolidatedPosition);
+                          setIsClosePositionModalOpen(true);
                         }}
-                        title="Fechar todas as posições deste contrato"
+                        title="Fechar quantidade específica da posição consolidada"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <polyline points="3,6 5,6 21,6"></polyline>
                           <path d="M19,6v14a2,2 0 0,1-2,2H7a2,2 0 0,1-2-2V6m3,0V4a2,2 0 0,1,2,2h4a2,2 0 0,1,2,2v2"></path>
                         </svg>
-                        Fechar Todas
+                        Fechar
                       </button>
                       <button 
                         className="btn btn-primary btn-sm"
@@ -420,8 +615,8 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
         );
 
       case 'performance':
-        const openPositions = filteredPositions.filter(p => p.status === 'OPEN');
-        const closedPositions = filteredPositions.filter(p => p.status === 'CLOSED');
+        const openPositions = filteredPositions.filter(p => p.status === 'EXECUTADA' || p.status === 'EM_ABERTO');
+        const closedPositions = filteredPositions.filter(p => p.status === 'FECHADA');
         
         // Calcular métricas de performance
         const totalPnlRealized = closedPositions.reduce((sum, pos) => sum + (pos.realized_pnl || 0), 0);
@@ -454,7 +649,7 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
                 <div className="metric-item">
                   <div className="metric-label">P&L Total</div>
                   <div className={`metric-value ${totalPnl >= 0 ? 'positive' : 'negative'}`}>
-                    {totalPnl >= 0 ? '+' : ''}R$ {totalPnl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    {totalPnl < 0 ? '-' : ''}R$ {Math.abs(totalPnl).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </div>
                 </div>
                 
@@ -596,7 +791,8 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
                     'Preço',
                     'Taxa',
                     'Total',
-                    'Status'
+                    'Status',
+                    'Ações'
                   ]}
                   data={executedTransactions.map((transaction, index) => [
                     <small key="id" style={{ fontFamily: 'monospace', color: 'var(--text-secondary)' }}>
@@ -632,7 +828,44 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
                           R$ {transaction.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </strong>
                       : '-',
-                    <span className="badge badge-success">Executada</span>
+                    <span className="badge badge-success">Executada</span>,
+                    <div key="actions" className="action-buttons">
+                      <button 
+                        className="btn btn-info btn-sm"
+                        onClick={() => handleViewTransaction(transaction)}
+                        title="Visualizar transação"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="3"></circle>
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        </svg>
+                        Ver
+                      </button>
+                      <button 
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => handleEditTransaction(transaction)}
+                        title="Editar transação"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                          <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        Editar
+                      </button>
+                      <button 
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDeleteTransaction(transaction)}
+                        title="Excluir transação"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3,6 5,6 21,6"></polyline>
+                          <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                          <line x1="10" y1="11" x2="10" y2="17"></line>
+                          <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                        Excluir
+                      </button>
+                    </div>
                   ])}
                 />
               ) : (
@@ -653,8 +886,8 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
 
       case 'resumo':
         const allPositions = filteredPositions;
-        const openPos = allPositions.filter(p => p.status === 'OPEN');
-        const closedPos = allPositions.filter(p => p.status === 'CLOSED');
+        const openPos = allPositions.filter(p => p.status === 'EXECUTADA' || p.status === 'EM_ABERTO');
+        const closedPos = allPositions.filter(p => p.status === 'FECHADA');
         
         // Distribuição por contrato
         const contractDistribution = allPositions.reduce((acc, pos) => {
@@ -676,9 +909,9 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
           
           if (!acc[monthKey]) acc[monthKey] = 0;
           
-          if (pos.status === 'CLOSED' && pos.realized_pnl) {
+          if (pos.status === 'FECHADA' && pos.realized_pnl) {
             acc[monthKey] += pos.realized_pnl;
-          } else if (pos.status === 'OPEN') {
+          } else if (pos.status === 'EXECUTADA' || pos.status === 'EM_ABERTO') {
             const contractSize = pos.contract.startsWith('BGI') ? 330 : 450;
             const unrealizedPnl = (pos.direction === 'LONG' ? 1 : -1) * 
               ((pos.current_price || pos.entry_price) - pos.entry_price) * 
@@ -859,6 +1092,8 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
         />
       )}
 
+      
+
       {/* Modal de Detalhes das Posições */}
       {isDetailsModalOpen && selectedConsolidated && (
         <div className="modal-overlay">
@@ -938,11 +1173,11 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
                           </div>
                           <div className="pnl-content">
                             <div className={`pnl-amount ${unrealizedPnL >= 0 ? 'positive' : 'negative'}`}>
-                              {unrealizedPnL >= 0 ? '+' : ''}
-                              {unrealizedPnL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                              {unrealizedPnL < 0 ? '-' : ''}
+                              R$ {Math.abs(unrealizedPnL).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </div>
                             <div className={`pnl-percentage ${pnlPercentage >= 0 ? 'positive' : 'negative'}`}>
-                              {pnlPercentage >= 0 ? '+' : ''}{pnlPercentage.toFixed(2)}%
+                              {pnlPercentage < 0 ? '-' : ''}{Math.abs(pnlPercentage).toFixed(2)}%
                             </div>
                           </div>
                         </div>
@@ -1052,6 +1287,27 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
           </div>
         </div>
       )}
+
+      {/* Modais de Transação */}
+      <ViewTransactionModal
+        isOpen={isViewTransactionModalOpen}
+        onClose={() => setIsViewTransactionModalOpen(false)}
+        transaction={selectedTransaction}
+      />
+
+      <EditTransactionModal
+        isOpen={isEditTransactionModalOpen}
+        onClose={() => setIsEditTransactionModalOpen(false)}
+        onSave={handleSaveTransaction}
+        transaction={selectedTransaction}
+      />
+
+      <DeleteTransactionModal
+        isOpen={isDeleteTransactionModalOpen}
+        onClose={() => setIsDeleteTransactionModalOpen(false)}
+        onConfirm={handleConfirmDeleteTransaction}
+        transaction={selectedTransaction}
+      />
     </div>
   );
 } 

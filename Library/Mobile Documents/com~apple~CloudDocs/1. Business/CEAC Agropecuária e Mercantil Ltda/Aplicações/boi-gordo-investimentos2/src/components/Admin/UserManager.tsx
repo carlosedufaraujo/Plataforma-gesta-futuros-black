@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { useData } from '@/contexts/DataContext';
-import { User } from '@/types';
+import React, { useState } from 'react';
+import { Plus, Edit, Trash2, User, Mail, Phone } from 'lucide-react';
+import { useHybridData } from '@/contexts/HybridDataContext';
+import { User as UserType } from '@/types';
 
 export default function UserManager() {
-  const { users, addUser, updateUser, deleteUser, currentUser, setCurrentUser } = useData();
+  const { users, addUser, updateUser, deleteUser, currentUser, setCurrentUser } = useHybridData();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<UserType | null>(null);
   const [formData, setFormData] = useState({
     nome: '',
     cpf: '',
@@ -44,7 +45,7 @@ export default function UserManager() {
     setIsModalOpen(false);
   };
 
-  const handleEdit = (user: User) => {
+  const handleEdit = (user: UserType) => {
     setFormData({
       nome: user.nome,
       cpf: user.cpf,
@@ -58,13 +59,13 @@ export default function UserManager() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (user: User) => {
+  const handleDelete = (user: UserType) => {
     if (confirm(`Tem certeza que deseja excluir o usuário ${user.nome}?`)) {
       deleteUser(user.id);
     }
   };
 
-  const handleSetCurrent = (user: User) => {
+  const handleSetCurrent = (user: UserType) => {
     setCurrentUser(user);
   };
 

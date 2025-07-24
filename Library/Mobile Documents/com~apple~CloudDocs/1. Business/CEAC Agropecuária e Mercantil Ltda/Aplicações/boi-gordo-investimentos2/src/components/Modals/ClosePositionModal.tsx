@@ -134,7 +134,9 @@ export default function ClosePositionModal({
         {/* Header */}
         <div className="modal-header">
           <div className="modal-title-section">
-            <h2 className="modal-title">Fechar Posição</h2>
+            <h2 className="modal-title">
+              {(position as any)._isConsolidated ? 'Fechar Posição Consolidada' : 'Fechar Posição'}
+            </h2>
             <span className="modal-subtitle">{position.contract}</span>
           </div>
           <button className="modal-close" onClick={onClose}>
@@ -156,9 +158,17 @@ export default function ClosePositionModal({
               </span>
             </div>
             <div className="summary-row">
-              <span className="summary-label">Quantidade</span>
+              <span className="summary-label">
+                {(position as any)._isConsolidated ? 'Quantidade Líquida' : 'Quantidade'}
+              </span>
               <span className="summary-value">{position.quantity} contratos</span>
             </div>
+            {(position as any)._isConsolidated && (
+              <div className="summary-row">
+                <span className="summary-label">Composição</span>
+                <span className="summary-value">{(position as any)._netPosition.positions.length} posição(ões) ativa(s)</span>
+              </div>
+            )}
             <div className="summary-row">
               <span className="summary-label">Preço Entrada</span>
               <span className="summary-value">R$ {position.entry_price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
@@ -171,8 +181,9 @@ export default function ClosePositionModal({
 
           {/* Formulário de Fechamento */}
           <div className="close-form">
-            <div className="form-row">
-              <div className="field-group">
+            {/* Campos principais horizontais */}
+            <div className="form-row horizontal-close-fields">
+              <div className="field-group flex-1">
                 <label className="field-label">Quantidade a Fechar</label>
                 <input
                   type="number"
@@ -185,17 +196,18 @@ export default function ClosePositionModal({
                 {errors.quantity && <span className="error-message">{errors.quantity}</span>}
               </div>
               
-              <div className="field-group">
+              <div className="field-group flex-1">
                 <label className="field-label">Preço de Fechamento</label>
-                <div className="price-input-container">
-                  <span className="currency-symbol">R$</span>
+                <div className="price-input-container-fixed">
+                  <span className="currency-symbol-fixed">R$</span>
                   <input
                     type="number"
                     value={formData.closePrice}
                     onChange={(e) => handleChange('closePrice', parseFloat(e.target.value) || 0)}
-                    className={`form-input ${errors.closePrice ? 'error' : ''}`}
+                    className={`form-input price-input-fixed ${errors.closePrice ? 'error' : ''}`}
                     step="0.01"
                     min="0.01"
+                    placeholder="0,00"
                   />
                 </div>
                 {errors.closePrice && <span className="error-message">{errors.closePrice}</span>}
@@ -210,7 +222,8 @@ export default function ClosePositionModal({
               </div>
             </div>
 
-            <div className="field-group">
+            {/* Campo do motivo em linha separada */}
+            <div className="field-group full-width-field">
               <label className="field-label">Motivo do Fechamento</label>
               <input
                 type="text"
@@ -258,7 +271,7 @@ export default function ClosePositionModal({
             Cancelar
           </button>
           <button className="btn btn-danger" onClick={handleSubmit}>
-            Fechar Posição
+            {(position as any)._isConsolidated ? 'Confirmar Fechamento' : 'Fechar Posição'}
           </button>
         </div>
       </div>

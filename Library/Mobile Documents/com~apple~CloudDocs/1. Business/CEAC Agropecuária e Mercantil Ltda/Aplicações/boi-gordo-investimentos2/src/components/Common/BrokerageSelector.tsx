@@ -1,99 +1,53 @@
 'use client';
 
-import { useState } from 'react';
-import { useUser } from '@/contexts/UserContext';
-import BrokerageSetupModal from '@/components/Modals/BrokerageSetupModal';
+import React from 'react';
+import { Building, User, ChevronDown } from 'lucide-react';
+import { useHybridData } from '@/contexts/HybridDataContext';
 
 export default function BrokerageSelector() {
-  const { currentSession } = useUser();
-  const [isSetupModalOpen, setIsSetupModalOpen] = useState(false);
+  const { currentUser, selectedBrokerage } = useHybridData();
 
-  // Estado de carregamento
-  if (!currentSession.user) {
+  if (!currentUser) {
     return (
-      <div className="sidebar-stats">
-        <div className="stat-item">
-          <span className="stat-label">Usuário:</span>
-          <span className="stat-value">Carregando...</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-label">Corretora:</span>
-          <span className="stat-value negative">Aguardando login</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-label">Atualização:</span>
-          <span className="stat-value">-</span>
+      <div className="brokerage-selector">
+        <div className="selector-content">
+          <div className="selector-icon">
+            <User size={16} />
+          </div>
+          <div className="selector-info">
+            <span className="selector-label">Usuário</span>
+            <span className="selector-value">Não logado</span>
+          </div>
         </div>
       </div>
     );
   }
 
-  const hasSelectedBrokerage = currentSession.selectedBrokerage !== null;
-  const isFirstSetup = !hasSelectedBrokerage;
+  const hasSelectedBrokerage = selectedBrokerage !== null;
 
   return (
-    <>
-      <div className="sidebar-stats">
-        <div className="stat-item">
-          <span className="stat-label">Usuário:</span>
-          <span className="stat-value">{currentSession.user.nome}</span>
+    <div className="brokerage-selector">
+      <div className="selector-content">
+        <div className="selector-icon">
+          <User size={16} />
         </div>
-        
-        <div className="stat-item">
-          <span className="stat-label">Corretora:</span>
-          {hasSelectedBrokerage ? (
-            <div className="brokerage-info">
-              <span className="stat-value">{currentSession.selectedBrokerage.nome}</span>
-              <button
-                className="brokerage-config-btn"
-                onClick={() => setIsSetupModalOpen(true)}
-                title="Configurar corretora"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="3"></circle>
-                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-              </button>
-            </div>
-          ) : (
-            <div className="brokerage-setup">
-              <span className="stat-value negative">Não configurada</span>
-              <button
-                className="setup-brokerage-btn"
-                onClick={() => setIsSetupModalOpen(true)}
-              >
-                Configurar
-              </button>
-            </div>
-          )}
+        <div className="selector-info">
+          <span className="selector-label">Usuário</span>
+          <span className="selector-value">{currentUser.nome}</span>
         </div>
-
-        <div className="stat-item">
-          <span className="stat-label">Atualização:</span>
-          <span className="stat-value">
-            {hasSelectedBrokerage ? 'Sincronizada' : '-'}
-          </span>
-        </div>
-
-        {hasSelectedBrokerage && (
-          <div className="stat-item">
-            <span className="stat-label">Status:</span>
-            <span className="stat-value positive">
-              <div className="connection-indicator">
-                <div className="status-dot active"></div>
-                Conectado
-              </div>
-            </span>
-          </div>
-        )}
       </div>
-
-      {/* Modal de configuração */}
-      <BrokerageSetupModal
-        isOpen={isSetupModalOpen}
-        onClose={() => setIsSetupModalOpen(false)}
-        isFirstSetup={isFirstSetup}
-      />
-    </>
+      
+      {hasSelectedBrokerage && (
+        <div className="selector-content">
+          <div className="selector-icon">
+            <Building size={16} />
+          </div>
+          <div className="selector-info">
+            <span className="selector-label">Corretora</span>
+            <span className="selector-value">{selectedBrokerage.nome}</span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 } 

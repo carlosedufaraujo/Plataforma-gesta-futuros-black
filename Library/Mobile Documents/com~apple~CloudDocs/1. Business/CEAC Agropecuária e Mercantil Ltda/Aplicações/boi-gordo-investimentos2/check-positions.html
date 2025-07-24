@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verificar Posições</title>
+</head>
+<body>
+    <h1>Status das Posições no LocalStorage</h1>
+    <div id="result"></div>
+    
+    <script>
+        const positions = JSON.parse(localStorage.getItem('acex_positions') || '{"data": []}');
+        const transactions = JSON.parse(localStorage.getItem('acex_transactions') || '{"data": []}');
+        
+        document.getElementById('result').innerHTML = `
+            <h2>Posições (${positions.data.length}):</h2>
+            <pre>${JSON.stringify(positions.data, null, 2)}</pre>
+            
+            <h2>Transações (${transactions.data.length}):</h2>
+            <pre>${JSON.stringify(transactions.data, null, 2)}</pre>
+        `;
+    </script>
+</body>
+</html>

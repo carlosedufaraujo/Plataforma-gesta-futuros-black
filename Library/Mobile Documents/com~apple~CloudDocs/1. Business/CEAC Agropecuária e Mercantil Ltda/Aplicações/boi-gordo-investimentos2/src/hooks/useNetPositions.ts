@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useData } from '@/contexts/DataContext';
+import { useHybridData } from '@/contexts/HybridDataContext';
 import { Position } from '@/types';
 
 export interface NetPosition {
@@ -20,12 +20,12 @@ export interface NetPosition {
 }
 
 export const useNetPositions = () => {
-  const { positions, calculateNetPosition, getAllNetPositions, isPositionNeutralized } = useData();
+  const { positions, calculateNetPosition, getAllNetPositions, isPositionNeutralized } = useHybridData();
 
   // Calcular posições líquidas com informações financeiras completas
   const netPositions = useMemo((): NetPosition[] => {
-    // Filtrar apenas posições realmente abertas (não NETTED, CLOSED, etc.)
-    const activePositions = positions.filter(p => p.status === 'OPEN');
+    // Filtrar apenas posições executadas e em aberto (não CANCELADA, FECHADA, NETTED, etc.)
+    const activePositions = positions.filter(p => p.status === 'EXECUTADA' || p.status === 'EM_ABERTO');
     const contracts = [...new Set(activePositions.map(p => p.contract))];
     
     return contracts.map(contract => {
@@ -55,8 +55,17 @@ export const useNetPositions = () => {
       // Calcular P&L não realizado e exposição
       const contractSize = contract.startsWith('BGI') ? 330 : 450;
       const priceDiff = currentPrice - weightedEntryPrice;
-      const multiplier = netDirection === 'LONG' ? 1 : netDirection === 'SHORT' ? -1 : 0;
-      const unrealizedPnL = multiplier * priceDiff * Math.abs(netQuantity) * contractSize;
+      
+      // Para LONG: P&L positivo quando preço sobe (priceDiff > 0)
+      // Para SHORT: P&L positivo quando preço cai (priceDiff < 0)
+      let unrealizedPnL = 0;
+      if (netDirection === 'LONG') {
+        unrealizedPnL = priceDiff * Math.abs(netQuantity) * contractSize;
+      } else if (netDirection === 'SHORT') {
+        // Para SHORT, quando preço cai (priceDiff negativo), P&L é positivo
+        unrealizedPnL = -priceDiff * Math.abs(netQuantity) * contractSize;
+      }
+      
       const exposure = weightedEntryPrice * Math.abs(netQuantity) * contractSize;
       
       return {

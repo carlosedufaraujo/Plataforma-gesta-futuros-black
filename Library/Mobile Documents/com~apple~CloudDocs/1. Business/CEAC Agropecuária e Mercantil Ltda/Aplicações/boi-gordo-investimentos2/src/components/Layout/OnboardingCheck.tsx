@@ -1,39 +1,35 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useUser } from '@/contexts/UserContext';
+import React, { useEffect, useState } from 'react';
 import BrokerageSetupModal from '@/components/Modals/BrokerageSetupModal';
+import { useHybridData } from '@/contexts/HybridDataContext';
 
 export default function OnboardingCheck() {
-  // SISTEMA DESABILITADO - Conforme solicitação do usuário
-  // O onboarding obrigatório a cada refresh foi removido
-  // Agora o vínculo usuário-corretora é feito na página de configurações
-  
-  return null;
-
-  /* CÓDIGO ANTERIOR DESABILITADO:
-  const { currentSession } = useUser();
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showBrokerageSetup, setShowBrokerageSetup] = useState(false);
+  const { currentUser, selectedBrokerage } = useHybridData();
 
   useEffect(() => {
-    // Verificar se usuário logado não tem corretora configurada
-    if (currentSession.user && !currentSession.selectedBrokerage) {
-      setShowOnboarding(true);
-    }
-  }, [currentSession.user, currentSession.selectedBrokerage]);
+    // Verificar se o usuário precisa configurar uma corretora
+    const timer = setTimeout(() => {
+      if (currentUser && !selectedBrokerage) {
+        setShowBrokerageSetup(true);
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [currentUser, selectedBrokerage]);
 
   const handleOnboardingComplete = () => {
-    setShowOnboarding(false);
+    setShowBrokerageSetup(false);
   };
 
-  if (!showOnboarding) return null;
+  if (!showBrokerageSetup) return null;
 
   return (
     <BrokerageSetupModal
-      isOpen={showOnboarding}
+      isOpen={showBrokerageSetup}
       onClose={handleOnboardingComplete}
       isFirstSetup={true}
     />
   );
-  */
 } 
