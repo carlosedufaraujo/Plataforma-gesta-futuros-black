@@ -1,0 +1,16 @@
+# Configuração Cloudflare Workers para o Backend
+name = "boi-gordo-api"
+main = "backend/dist/worker.js"
+compatibility_date = "2024-01-01"
+
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "your-kv-namespace-id"
+
+# Rotas da API
+[[routes]]
+pattern = "api.seudominio.com.br/*"
+zone_name = "seudominio.com.br"
