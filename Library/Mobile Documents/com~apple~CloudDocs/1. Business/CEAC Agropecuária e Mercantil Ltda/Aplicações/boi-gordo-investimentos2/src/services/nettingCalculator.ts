@@ -24,17 +24,17 @@ export const calculateBrazilianNetPosition = (
   }
 
   // Separar por direção
-  const longPositions = contractPositions.filter(pos => pos.direction === 'LONG');
-  const shortPositions = contractPositions.filter(pos => pos.direction === 'SHORT');
+  const buyPositions = contractPositions.filter(pos => pos.direction === 'COMPRA');
+  const sellPositions = contractPositions.filter(pos => pos.direction === 'VENDA');
 
   // Calcular quantidades
-  const longQuantity = longPositions.reduce((sum, pos) => sum + pos.quantity, 0);
-  const shortQuantity = shortPositions.reduce((sum, pos) => sum + pos.quantity, 0);
-  const netQuantity = longQuantity - shortQuantity;
+  const buyQuantity = buyPositions.reduce((sum, pos) => sum + pos.quantity, 0);
+  const sellQuantity = sellPositions.reduce((sum, pos) => sum + pos.quantity, 0);
+  const netQuantity = buyQuantity - sellQuantity;
 
   // Determinar direção líquida
-  const netDirection: 'LONG' | 'SHORT' | 'FLAT' = 
-    netQuantity > 0 ? 'LONG' : netQuantity < 0 ? 'SHORT' : 'FLAT';
+    const netDirection: 'COMPRA' | 'VENDA' | 'FLAT' =
+    netQuantity > 0 ? 'COMPRA' : netQuantity < 0 ? 'VENDA' : 'FLAT';
 
   // Calcular preço médio baseado na direção líquida
   let averagePrice = 0;
@@ -42,7 +42,7 @@ export const calculateBrazilianNetPosition = (
   let totalQuantity = 0;
 
   if (netDirection !== 'FLAT') {
-    const relevantPositions = netDirection === 'LONG' ? longPositions : shortPositions;
+    const relevantPositions = netDirection === 'COMPRA' ? buyPositions : sellPositions;
     
     relevantPositions.forEach(pos => {
       totalCost += pos.entryPrice * pos.quantity;
@@ -62,7 +62,7 @@ export const calculateBrazilianNetPosition = (
     const priceDiff = currentPrice - averagePrice;
     const absNetQuantity = Math.abs(netQuantity);
     
-    unrealizedPnL = netDirection === 'LONG' 
+    unrealizedPnL = netDirection === 'COMPRA' 
       ? priceDiff * absNetQuantity * contractInfo.size // 330 arrobas por contrato
       : -priceDiff * absNetQuantity * contractInfo.size;
   }
@@ -90,8 +90,8 @@ export const calculateBrazilianNetPosition = (
     first_entry_date: sortedPositions[0]?.openDate || new Date().toISOString(),
     last_entry_date: sortedPositions[sortedPositions.length - 1]?.openDate || new Date().toISOString(),
     positions: contractPositions,
-    long_quantity: longQuantity,
-    short_quantity: shortQuantity,
+    buy_quantity: buyQuantity,
+    sell_quantity: sellQuantity,
     individual_positions_count: contractPositions.length
   };
 };
@@ -116,12 +116,12 @@ export const simulateBrazilianPartialClose = (
 
   // Calcular P&L realizado
   const priceDiff = exitPrice - average_price;
-  const realizedPnL = net_direction === 'LONG' 
+  const realizedPnL = net_direction === 'COMPRA' 
     ? priceDiff * quantityToClose * CONTRACT_SIZES[netPosition.contract_type].size
     : -priceDiff * quantityToClose * CONTRACT_SIZES[netPosition.contract_type].size;
 
   // Calcular quantidade restante
-  const remainingQuantity = net_direction === 'LONG' 
+  const remainingQuantity = net_direction === 'COMPRA' 
     ? net_quantity - quantityToClose
     : net_quantity + quantityToClose;
 
@@ -208,7 +208,7 @@ export const calculateDailyAdjustment = (
   const priceDiff = currentClosePrice - previousClosePrice;
   const contractInfo = CONTRACT_SIZES[netPosition.contract_type];
   
-  const dailyPnL = netPosition.net_direction === 'LONG'
+  const dailyPnL = netPosition.net_direction === 'COMPRA'
     ? priceDiff * Math.abs(netPosition.net_quantity) * contractInfo.size
     : -priceDiff * Math.abs(netPosition.net_quantity) * contractInfo.size;
 

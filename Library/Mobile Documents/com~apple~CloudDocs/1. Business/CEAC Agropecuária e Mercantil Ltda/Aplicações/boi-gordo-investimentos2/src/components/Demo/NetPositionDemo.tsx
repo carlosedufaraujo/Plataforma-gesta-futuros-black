@@ -20,7 +20,7 @@ export default function NetPositionDemo() {
             <div className="stat-item">
               <span className="stat-label">Total P&L Não Realizado</span>
               <span className={`stat-value ${netStats.totalUnrealizedPnL >= 0 ? 'positive' : 'negative'}`}>
-                {netStats.totalUnrealizedPnL < 0 ? '-' : ''}R$ {Math.abs(netStats.totalUnrealizedPnL).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                {netStats.totalUnrealizedPnL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
               </span>
             </div>
             
@@ -86,7 +86,7 @@ export default function NetPositionDemo() {
                     <div className="detail-item">
                       <span className="detail-label">P&L Não Realizado:</span>
                       <span className={`detail-value ${netPos.unrealizedPnL >= 0 ? 'positive' : 'negative'}`}>
-                        {netPos.unrealizedPnL < 0 ? '-' : ''}R$ {Math.abs(netPos.unrealizedPnL).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        {netPos.unrealizedPnL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </span>
                     </div>
                     

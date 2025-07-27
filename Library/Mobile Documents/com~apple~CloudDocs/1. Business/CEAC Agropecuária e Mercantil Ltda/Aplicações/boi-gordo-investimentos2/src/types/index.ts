@@ -1,5 +1,5 @@
 export type ContractType = 'BGI' | 'CCM' | 'ICF' | 'DOL' | 'IND';
-export type PositionDirection = 'LONG' | 'SHORT';
+export type PositionDirection = 'COMPRA' | 'VENDA';
 export type OptionType = 'CALL' | 'PUT';
 export type TransactionType = 'BUY' | 'SELL' | 'EXERCISE' | 'EXPIRE';
 export type PositionStatus = 'EXECUTADA' | 'EM_ABERTO' | 'CANCELADA' | 'FECHADA' | 'NETTED';
@@ -251,8 +251,8 @@ export const DEFAULT_EXPIRATIONS: ContractExpiration[] = [
 export interface NetPosition {
   contract: string; // Ex: 'BGIJ5', 'BGIN5' (inclui vencimento)
   contract_type: 'BGI' | 'CCM';
-  net_quantity: number; // Quantidade líquida (positivo = LONG, negativo = SHORT)
-  net_direction: 'LONG' | 'SHORT' | 'FLAT';
+  net_quantity: number; // Quantidade líquida (positivo = COMPRA, negativo = VENDA)
+  net_direction: 'COMPRA' | 'VENDA' | 'FLAT';
   average_price: number; // Preço médio ponderado (inclui centavos)
   current_price: number;
   net_exposure: number; // Exposição total em R$
@@ -262,8 +262,8 @@ export interface NetPosition {
   first_entry_date: string;
   last_entry_date: string;
   positions: Position[]; // Posições individuais que compõem o NET
-  long_quantity: number; // Total de contratos LONG
-  short_quantity: number; // Total de contratos SHORT
+  buy_quantity: number; // Total de contratos de COMPRA
+  sell_quantity: number; // Total de contratos de VENDA
   individual_positions_count: number; // Número de posições individuais
 }
 

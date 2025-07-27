@@ -63,10 +63,7 @@ export default function NetPositionsTable({
       key="pnl" 
       className={netPosition.unrealized_pnl >= 0 ? 'positive' : 'negative'}
     >
-      {netPosition.unrealized_pnl >= 0 ? '+' : ''}R$ {Math.abs(netPosition.unrealized_pnl).toLocaleString('pt-BR', { 
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      })}
+      {netPosition.unrealized_pnl >= 0 ? '+' : ''}{netPosition.unrealized_pnl.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
     </span>,
 
     // Exposição - FORMATAÇÃO BRASILEIRA

@@ -14285,3 +14285,214 @@ th .btn-primary:hover {
 /* Layout horizontal já definido anteriormente - removendo duplicações */
 
 /* Responsividade já definida anteriormente */
+
+/* ========================================
+   COLUNA ÚLTIMA TRANSAÇÃO
+   ======================================== */
+
+/* Estilo para coluna Última Transação */
+.last-transaction-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 100px;
+}
+
+.last-transaction-info .transaction-date {
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.last-transaction-info .transaction-time {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+}
+
+/* ========================================
+   EDIÇÃO DE PREÇO ATUAL
+   ======================================== */
+
+/* Container principal para display de preço */
+.price-display-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.price-display-container .price-value {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.price-edit-trigger {
+  opacity: 1;
+  padding: 4px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.price-edit-trigger:hover {
+  background: var(--color-info);
+  color: white;
+  border-color: var(--color-info);
+}
+
+/* Container para edição de preço */
+.price-edit-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 140px;
+}
+
+.price-edit-input-group {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.price-edit-input-group .currency-symbol {
+  position: absolute;
+  left: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  z-index: 1;
+}
+
+.price-edit-input {
+  width: 100%;
+  padding: 6px 12px 6px 28px;
+  border: 2px solid var(--color-info);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.price-edit-input:focus {
+  border-color: var(--color-info);
+  box-shadow: 0 0 0 3px var(--color-info-bg);
+}
+
+/* Ações de edição */
+.price-edit-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.btn-icon {
+  padding: 4px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.btn-icon.btn-success {
+  background: var(--color-positive);
+  color: white;
+}
+
+.btn-icon.btn-success:hover {
+  background: var(--color-positive);
+  opacity: 0.8;
+  transform: scale(1.05);
+}
+
+.btn-icon.btn-cancel {
+  background: var(--color-negative);
+  color: white;
+}
+
+.btn-icon.btn-cancel:hover {
+  background: var(--color-negative);
+  opacity: 0.8;
+  transform: scale(1.05);
+}
+
+/* Versão compacta para edição de preço */
+.price-edit-compact {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.price-edit-input-compact {
+  width: 70px;
+  padding: 4px 6px;
+  border: 1px solid var(--color-info);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.price-edit-input-compact:focus {
+  border-color: var(--color-info);
+  box-shadow: 0 0 0 2px var(--color-info-bg);
+}
+
+.price-edit-actions-compact {
+  display: flex;
+  gap: 2px;
+}
+
+.btn-icon-compact {
+  padding: 2px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  min-width: 20px;
+  min-height: 20px;
+}
+
+.btn-icon-compact.btn-success {
+  background: var(--color-positive);
+  color: white;
+}
+
+.btn-icon-compact.btn-success:hover {
+  background: var(--color-positive);
+  opacity: 0.8;
+  transform: scale(1.1);
+}
+
+.btn-icon-compact.btn-cancel {
+  background: var(--color-negative);
+  color: white;
+}
+
+.btn-icon-compact.btn-cancel:hover {
+  background: var(--color-negative);
+  opacity: 0.8;
+  transform: scale(1.1);
+}

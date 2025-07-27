@@ -27,7 +27,7 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
   const [formData, setFormData] = useState({
     contract: '',
     contractDisplay: '',
-    direction: 'LONG' as 'LONG' | 'SHORT',
+    direction: 'COMPRA' as 'COMPRA' | 'VENDA',
     quantity: '',
     price: '',
     executionDate: getCurrentDateTime()
@@ -213,8 +213,8 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
     
     const positionData: Omit<Position, 'id'> = {
       // Campos obrigatórios para Supabase
-      user_id: 'current-user-id', // Será substituído no SupabaseDataContext
-      brokerage_id: 'current-brokerage-id', // Será substituído no SupabaseDataContext
+      user_id: '2dc60bee-5466-4f7e-8e1d-00cf91ee6e97', // UUID válido
+      brokerage_id: '6b75b1d7-8cea-4823-9c2f-2ff236d32da6', // UUID válido
       contract_id: contract.id, // ID do contrato do Supabase
       contract: contract.symbol,
       direction: formData.direction,
@@ -249,7 +249,7 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
     setFormData({
       contract: '',
       contractDisplay: '',
-      direction: 'LONG',
+              direction: 'COMPRA',
       quantity: '',
       price: '',
       executionDate: getCurrentDateTime()
@@ -278,7 +278,7 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
       setFormData({
         contract: '',
         contractDisplay: '',
-        direction: 'LONG',
+        direction: 'COMPRA',
         quantity: '',
         price: '',
         executionDate: getCurrentDateTime()
@@ -299,159 +299,217 @@ export default function NewPositionModal({ isOpen, onClose, onSubmit, editingPos
   return (
     <div className="modal-overlay">
       <div className="modal position-modal">
+        {/* Header */}
         <div className="modal-header">
-          <h3>{editingPosition ? 'Editar Posição' : 'Nova Posição'}</h3>
+          <div className="modal-title-section">
+            <h2 className="modal-title">{editingPosition ? 'Editar Posição' : 'Nova Posição'}</h2>
+            <span className="modal-subtitle">
+              {selectedContract ? `${selectedContract.symbol} - ${selectedContract.name}` : 'Selecione um contrato'}
+            </span>
+          </div>
           <button className="modal-close" onClick={onClose} type="button">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="modal-body">
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label required">Contrato</label>
-              <div className="contract-input-container">
-                <input
-                  type="text"
-                  className={`form-input ${errors.contract ? 'error' : ''}`}
-                  value={formData.contract}
-                  onChange={(e) => handleContractChange(e.target.value)}
-                  onFocus={() => {
-                    if (formData.contract.trim()) {
-                      const suggestions = filterSuggestions(formData.contract);
-                      setContractSuggestions(suggestions);
-                      setShowSuggestions(suggestions.length > 0);
-                    }
-                  }}
-                  onBlur={() => {
-                    // Delay para permitir clique na sugestão
-                    setTimeout(() => setShowSuggestions(false), 200);
-                  }}
-                  placeholder="Digite o símbolo (ex: BGIF25, CCMK25)"
-                  disabled={loadingContracts}
-                />
-                
-                {loadingContracts && (
-                  <div className="loading-indicator">
-                    <div className="spinner-small"></div>
-                  </div>
-                )}
-                
-                {showSuggestions && contractSuggestions.length > 0 && (
-                  <div className="suggestions-dropdown">
-                    {contractSuggestions.map((contract) => (
-                      <div
-                        key={contract.id}
-                        className="suggestion-item"
-                        onClick={() => selectSuggestion(contract)}
-                      >
-                        <div className="suggestion-symbol">{contract.symbol}</div>
-                        <div className="suggestion-name">{contract.name}</div>
-                        <div className="suggestion-details">
-                          {contract.contract_size} {contract.unit}
-                          {contract.current_price && (
-                            <span className="suggestion-price">
-                              R$ {contract.current_price.toFixed(2)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+        {/* Body */}
+        <div className="modal-body">
+          {/* Informações do Contrato Selecionado */}
+          {selectedContract && (
+            <div className="position-summary">
+              <div className="summary-row">
+                <span className="summary-label">Contrato</span>
+                <span className="summary-value">{selectedContract.symbol}</span>
               </div>
-              {errors.contract && <div className="error-message">{errors.contract}</div>}
-              
-              {selectedContract && (
-                <div className="contract-info">
-                  <span className="contract-details">
-                    {selectedContract.name} • {selectedContract.contract_size} {selectedContract.unit}
-                    {selectedContract.current_price && (
-                      <span> • R$ {selectedContract.current_price.toFixed(2)}</span>
-                    )}
+              <div className="summary-row">
+                <span className="summary-label">Produto</span>
+                <span className="summary-value">{selectedContract.name}</span>
+              </div>
+              <div className="summary-row">
+                <span className="summary-label">Tamanho</span>
+                <span className="summary-value">{selectedContract.contract_size} {selectedContract.unit}</span>
+              </div>
+              {selectedContract.current_price && (
+                <div className="summary-row">
+                  <span className="summary-label">Preço Atual</span>
+                  <span className="summary-value">
+                    {selectedContract.current_price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </span>
                 </div>
               )}
             </div>
-
-            <div className="form-group">
-              <label className="form-label required">Direção</label>
-              <select
-                className="form-select"
-                value={formData.direction}
-                onChange={(e) => handleChange('direction', e.target.value)}
-              >
-                <option value="LONG">LONG (Compra)</option>
-                <option value="SHORT">SHORT (Venda)</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label required">Quantidade</label>
-              <input
-                type="number"
-                className={`form-input ${errors.quantity ? 'error' : ''}`}
-                value={formData.quantity}
-                onChange={(e) => handleChange('quantity', e.target.value)}
-                placeholder="Número de contratos"
-                min="1"
-              />
-              {errors.quantity && <div className="error-message">{errors.quantity}</div>}
-            </div>
-
-            <div className="form-group">
-              <label className="form-label required">Preço</label>
-              <input
-                type="number"
-                step="0.01"
-                className={`form-input ${errors.price ? 'error' : ''}`}
-                value={formData.price}
-                onChange={(e) => handleChange('price', e.target.value)}
-                placeholder="Preço de entrada"
-                min="0.01"
-              />
-              {errors.price && <div className="error-message">{errors.price}</div>}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label required">Data e Hora de Execução</label>
-            <input
-              type="datetime-local"
-              className={`form-input ${errors.executionDate ? 'error' : ''}`}
-              value={formData.executionDate}
-              onChange={(e) => handleChange('executionDate', e.target.value)}
-            />
-            {errors.executionDate && <div className="error-message">{errors.executionDate}</div>}
-          </div>
-
-          {estimatedExposure > 0 && (
-            <div className="exposure-info">
-              <span className="exposure-label">Exposição Estimada:</span>
-              <span className="exposure-value">
-                R$ {estimatedExposure.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
           )}
 
-          <div className="modal-actions">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Cancelar
-            </button>
-            <button 
-              type="submit" 
-              className="btn btn-primary"
-              disabled={loadingContracts}
-            >
-              {editingPosition ? 'Salvar Alterações' : 'Criar Posição'}
-            </button>
-          </div>
-        </form>
+          {/* Formulário */}
+          <form onSubmit={handleSubmit} className="position-form">
+            {/* Seleção de Contrato */}
+            <div className="form-row">
+              <div className="field-group full-width">
+                <label className="field-label">Contrato</label>
+                <div className="contract-input-container">
+                  <input
+                    type="text"
+                    className={`form-input ${errors.contract ? 'error' : ''}`}
+                    value={formData.contract}
+                    onChange={(e) => handleContractChange(e.target.value)}
+                    onFocus={() => {
+                      if (formData.contract.trim()) {
+                        const suggestions = filterSuggestions(formData.contract);
+                        setContractSuggestions(suggestions);
+                        setShowSuggestions(suggestions.length > 0);
+                      }
+                    }}
+                    onBlur={() => {
+                      setTimeout(() => setShowSuggestions(false), 200);
+                    }}
+                    placeholder="Digite o símbolo (ex: BGIF25, CCMK25)"
+                    disabled={loadingContracts}
+                  />
+                  
+                  {loadingContracts && (
+                    <div className="loading-indicator">
+                      <div className="spinner-small"></div>
+                    </div>
+                  )}
+                  
+                  {showSuggestions && contractSuggestions.length > 0 && (
+                    <div className="suggestions-dropdown">
+                      {contractSuggestions.map((contract) => (
+                        <div
+                          key={contract.id}
+                          className="suggestion-item"
+                          onClick={() => selectSuggestion(contract)}
+                        >
+                          <div className="suggestion-symbol">{contract.symbol}</div>
+                          <div className="suggestion-name">{contract.name}</div>
+                          <div className="suggestion-details">
+                            {contract.contract_size} {contract.unit}
+                            {contract.current_price && (
+                              <span className="suggestion-price">
+                                R$ {contract.current_price.toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {errors.contract && <span className="error-message">{errors.contract}</span>}
+              </div>
+            </div>
+
+            {/* Campos principais horizontais */}
+            <div className="form-row horizontal-close-fields">
+              <div className="field-group flex-1">
+                <label className="field-label">Direção</label>
+                <select
+                  className="form-input"
+                  value={formData.direction}
+                  onChange={(e) => handleChange('direction', e.target.value)}
+                >
+                                  <option value="COMPRA">COMPRA</option>
+                <option value="VENDA">VENDA</option>
+                </select>
+              </div>
+              
+              <div className="field-group flex-1">
+                <label className="field-label">Quantidade</label>
+                <input
+                  type="number"
+                  className={`form-input ${errors.quantity ? 'error' : ''}`}
+                  value={formData.quantity}
+                  onChange={(e) => handleChange('quantity', e.target.value)}
+                  placeholder="Contratos"
+                  min="1"
+                />
+                {errors.quantity && <span className="error-message">{errors.quantity}</span>}
+              </div>
+            </div>
+
+            {/* Preço e Data */}
+            <div className="form-row horizontal-close-fields">
+              <div className="field-group flex-1">
+                <label className="field-label">Preço de Entrada</label>
+                <div className="price-input-container-fixed">
+                  <span className="currency-symbol-fixed">R$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className={`form-input price-input-fixed ${errors.price ? 'error' : ''}`}
+                    value={formData.price}
+                    onChange={(e) => handleChange('price', e.target.value)}
+                    placeholder="0,00"
+                    min="0.01"
+                  />
+                </div>
+                {errors.price && <span className="error-message">{errors.price}</span>}
+              </div>
+              
+              <div className="field-group flex-1">
+                <label className="field-label">Data de Execução</label>
+                <input
+                  type="datetime-local"
+                  className={`form-input ${errors.executionDate ? 'error' : ''}`}
+                  value={formData.executionDate}
+                  onChange={(e) => handleChange('executionDate', e.target.value)}
+                />
+                {errors.executionDate && <span className="error-message">{errors.executionDate}</span>}
+              </div>
+            </div>
+
+            {/* Estimativa de Exposição */}
+            {estimatedExposure > 0 && selectedContract && (
+              <div className="pnl-card">
+                <div className="pnl-header">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                    <path d="M2 17l10 5 10-5"></path>
+                    <path d="M2 12l10 5 10-5"></path>
+                  </svg>
+                  <span className="pnl-title">Resumo da Operação</span>
+                </div>
+                <div className="pnl-content">
+                  <div className="pnl-amount">
+                    {estimatedExposure.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </div>
+                  <div className="pnl-details">
+                    <span className="pnl-detail-item">
+                      <span className="detail-label">Exposição Total:</span>
+                      <span className="detail-value">
+                        {quantity} × R$ {parseFloat(formData.price || '0').toFixed(2)} × {contractSize.toLocaleString()}
+                      </span>
+                    </span>
+                    <span className="pnl-detail-item">
+                      <span className="detail-label">Variação por ponto:</span>
+                      <span className="detail-value">
+                        {(quantity * contractSize).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </form>
+        </div>
+
+        {/* Footer */}
+        <div className="modal-footer">
+          <button type="button" className="btn btn-secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button 
+            type="submit" 
+            className="btn btn-primary"
+            onClick={handleSubmit}
+            disabled={loadingContracts}
+          >
+            {editingPosition ? 'Salvar Alterações' : 'Criar Posição'}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -139,14 +139,17 @@ export class SupabaseService {
     
     console.log('📊 Criando posição no Supabase:', positionData);
     
+    // Mapear COMPRA/VENDA para LONG/SHORT para compatibilidade com constraint
+    const mappedDirection = positionData.direction === 'COMPRA' ? 'LONG' : 'SHORT';
+    
     const { data, error } = await client
       .from('positions')
       .insert({
         user_id: positionData.user_id,
         brokerage_id: positionData.brokerage_id,
-        contract_id: positionData.contract_id,
+        contract_id: positionData.contract_id || null,
         contract: positionData.contract,
-        direction: positionData.direction,
+        direction: mappedDirection,
         quantity: positionData.quantity,
         entry_price: positionData.entry_price,
         current_price: positionData.current_price,
@@ -175,20 +178,27 @@ export class SupabaseService {
   }
 
   async updatePosition(id: string, updates: Partial<Position>): Promise<Position> {
+    // Mapear COMPRA/VENDA para LONG/SHORT se direction estiver sendo atualizada
+    const mappedUpdates: any = {
+      current_price: updates.current_price,
+      stop_loss: updates.stop_loss,
+      take_profit: updates.take_profit,
+      status: updates.status,
+      exit_date: updates.exit_date,
+      exit_price: updates.exit_price,
+      realized_pnl: updates.realized_pnl,
+      unrealized_pnl: updates.unrealized_pnl,
+      pnl_percentage: updates.pnl_percentage,
+      exposure: updates.exposure
+    };
+    
+    if (updates.direction) {
+      mappedUpdates.direction = updates.direction === 'COMPRA' ? 'LONG' : 'SHORT';
+    }
+    
     const { data, error } = await supabase
       .from('positions')
-      .update({
-        current_price: updates.current_price,
-        stop_loss: updates.stop_loss,
-        take_profit: updates.take_profit,
-        status: updates.status,
-        exit_date: updates.exit_date,
-        exit_price: updates.exit_price,
-        realized_pnl: updates.realized_pnl,
-        unrealized_pnl: updates.unrealized_pnl,
-        pnl_percentage: updates.pnl_percentage,
-        exposure: updates.exposure
-      })
+      .update(mappedUpdates)
       .eq('id', id)
       .select()
       .single();
@@ -266,15 +276,15 @@ export class SupabaseService {
     console.log('🆔 Gerando transação com custom_id:', customId);
     
     const insertData = {
-      user_id: transactionData.userId,
-      brokerage_id: transactionData.brokerageId,
-      date: transactionData.date,
-      type: transactionData.type,
-      contract: transactionData.contract,
-      quantity: transactionData.quantity,
-      price: transactionData.price,
-      total: transactionData.total,
-      fees: transactionData.fees,
+        user_id: transactionData.userId,
+        brokerage_id: transactionData.brokerageId,
+        date: transactionData.date,
+        type: transactionData.type,
+        contract: transactionData.contract,
+        quantity: transactionData.quantity,
+        price: transactionData.price,
+        total: transactionData.total,
+        fees: transactionData.fees,
       status: transactionData.status,
       custom_id: customId
     };
@@ -311,6 +321,7 @@ export class SupabaseService {
     if (updates.total !== undefined) dbUpdates.total = updates.total;
     if (updates.fees !== undefined) dbUpdates.fees = updates.fees;
     if (updates.status) dbUpdates.status = updates.status;
+    if (updates.positionId !== undefined) dbUpdates.position_id = updates.positionId;
 
     // Buscar pelo custom_id primeiro, depois pelo UUID
     let query = supabase
@@ -328,7 +339,7 @@ export class SupabaseService {
     }
 
     const { data, error } = await query;
-
+    
     if (error) throw error;
     return this.mapTransactionFromDB(data);
   }
@@ -437,12 +448,15 @@ export class SupabaseService {
   }
 
   private mapPositionFromDB(dbPosition: any): Position {
+    // Mapear LONG/SHORT de volta para COMPRA/VENDA
+    const mappedDirection = dbPosition.direction === 'LONG' ? 'COMPRA' : 'VENDA';
+    
     return {
       id: dbPosition.id,
       user_id: dbPosition.user_id,
       contract_id: dbPosition.contract_id,
       contract: dbPosition.contract,
-      direction: dbPosition.direction as 'LONG' | 'SHORT',
+      direction: mappedDirection as 'COMPRA' | 'VENDA',
       quantity: dbPosition.quantity,
       entry_price: dbPosition.entry_price,
       current_price: dbPosition.current_price,
@@ -478,6 +492,7 @@ export class SupabaseService {
       total: dbTransaction.total,
       fees: dbTransaction.fees,
       status: dbTransaction.status as any,
+      positionId: dbTransaction.position_id,
       createdAt: dbTransaction.created_at
     };
   }

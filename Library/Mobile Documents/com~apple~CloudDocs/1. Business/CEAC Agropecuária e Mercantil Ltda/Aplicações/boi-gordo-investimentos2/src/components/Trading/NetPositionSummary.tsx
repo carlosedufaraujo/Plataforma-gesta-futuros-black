@@ -100,10 +100,7 @@ export default function NetPositionSummaryComponent({
               <div className="summary-metric">
                 <span className="summary-metric-label">P&L Não Real.</span>
                 <span className={`summary-metric-value ${position.unrealized_pnl >= 0 ? 'positive' : 'negative'}`}>
-                  {position.unrealized_pnl >= 0 ? '+' : ''}R$ {Math.abs(position.unrealized_pnl).toLocaleString('pt-BR', { 
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
-                  })}
+                  {position.unrealized_pnl >= 0 ? '+' : ''}{position.unrealized_pnl.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </span>
               </div>
             </div>

@@ -7,6 +7,8 @@ import NewOptionModal from '@/components/Modals/NewOptionModal';
 import StrategyModal from '@/components/Modals/StrategyModal';
 import AnalysisModal from '@/components/Modals/AnalysisModal';
 import SettingsModal from '@/components/Modals/SettingsModal';
+import BrokerageRegistrationModal from '@/components/Modals/BrokerageRegistrationModal';
+import UserRegistrationModal from '@/components/Modals/UserRegistrationModal';
 import { useHybridData } from '@/contexts/HybridDataContext';
 
 interface ModalState {

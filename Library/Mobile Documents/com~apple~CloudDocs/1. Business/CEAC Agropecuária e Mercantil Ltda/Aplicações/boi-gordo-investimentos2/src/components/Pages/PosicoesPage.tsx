@@ -11,6 +11,7 @@ import EditTransactionModal from '@/components/Modals/EditTransactionModal';
 import DeleteTransactionModal from '@/components/Modals/DeleteTransactionModal';
 import { useHybridData } from '@/contexts/HybridDataContext';
 import { useNetPositions } from '@/hooks/useNetPositions';
+import { parseLocalDate, formatDateBR, formatTimeBR } from '@/utils/dateUtils';
 
 interface PosicoesPageProps {
   selectedPeriod: string;
@@ -18,7 +19,15 @@ interface PosicoesPageProps {
 
 export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
   const { positions, transactions, addPosition, addTransaction, updatePosition, closePosition, updateTransaction, deleteTransaction } = useHybridData();
-  const { netPositions, netStats, formatNetQuantity, getDirectionColor } = useNetPositions();
+  const { 
+    netPositions, 
+    netStats, 
+    formatNetQuantity, 
+    getDirectionColor, 
+    getNeutralizedPositionsForPerformance, 
+    getPartialPnLForPerformance,
+    getRealizedPnL
+  } = useNetPositions();
   const [activeTab, setActiveTab] = useState<PositionTabType>('gestao');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
@@ -33,6 +42,10 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
   const [positionToClose, setPositionToClose] = useState<Position | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedConsolidated, setSelectedConsolidated] = useState<any>(null);
+  
+  // Estados para edição inline de preço
+  const [editingPrice, setEditingPrice] = useState<string | null>(null);
+  const [editingPriceValue, setEditingPriceValue] = useState<string>('');
   
 
 
@@ -297,13 +310,13 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
         
         // Ordenar posições por direção (fechar primeiro as posições contrárias à direção líquida)
         const sortedPositions = [...netPosition.positions].sort((a, b) => {
-          if (netPosition.netDirection === 'LONG') {
-            // Se líquido é LONG, fechar primeiro as SHORT
-            return a.direction === 'SHORT' ? -1 : 1;
-          } else {
-            // Se líquido é SHORT, fechar primeiro as LONG
-            return a.direction === 'LONG' ? -1 : 1;
-          }
+                  if (netPosition.netDirection === 'COMPRA') {
+          // Se líquido é COMPRA, fechar primeiro as VENDA
+          return a.direction === 'VENDA' ? -1 : 1;
+        } else {
+          // Se líquido é VENDA, fechar primeiro as COMPRA
+          return a.direction === 'COMPRA' ? -1 : 1;
+        }
         });
 
         for (const position of sortedPositions) {
@@ -324,7 +337,7 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
               brokerageId: position.brokerage_id,
               positionId: position.id,
               date: new Date().toISOString(),
-              type: position.direction === 'LONG' ? 'VENDA' : 'COMPRA',
+              type: position.direction === 'COMPRA' ? 'VENDA' : 'COMPRA',
               contract: position.contract,
               quantity: quantityToCloseFromThis,
               price: closePrice,
@@ -512,7 +525,7 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
                       {netPosition.netDirection}
                     </span>,
                     
-                    // Quantidade (com sinal negativo para SHORT)
+                    // Quantidade (com sinal negativo para VENDA)
                     <strong 
                       key="quantity" 
                       className={netPosition.netQuantity < 0 ? 'negative' : ''}
@@ -524,8 +537,72 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
                     // Preço Médio de Entrada
                     netPosition.weightedEntryPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
                     
-                    // Preço Atual
-                    netPosition.currentPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+                    // Preço Atual com edição inline minimalista
+                    <div key="currentPrice" className="price-edit-container">
+                      {editingPrice === netPosition.contract ? (
+                        <div className="price-edit-compact">
+                          <input
+                            type="number"
+                            value={editingPriceValue}
+                            onChange={(e) => setEditingPriceValue(e.target.value)}
+                            className="price-edit-input-compact"
+                            autoFocus
+                          />
+                          <div className="price-edit-actions-compact">
+                            <button 
+                              className="btn-icon-compact btn-success"
+                              onClick={() => {
+                                if (editingPriceValue && !isNaN(Number(editingPriceValue))) {
+                                  // Atualizar todas as posições do contrato
+                                  netPosition.positions.forEach(position => {
+                                    updatePosition(position.id, { current_price: Number(editingPriceValue) });
+                                  });
+                                }
+                                setEditingPrice(null);
+                                setEditingPriceValue('');
+                              }}
+                              title="Confirmar"
+                            >
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polyline points="20,6 9,17 4,12"></polyline>
+                              </svg>
+                            </button>
+                            <button 
+                              className="btn-icon-compact btn-cancel"
+                              onClick={() => {
+                                setEditingPrice(null);
+                                setEditingPriceValue('');
+                              }}
+                              title="Cancelar"
+                            >
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="price-display-container">
+                          <span className="price-value">
+                            {netPosition.currentPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </span>
+                          <button 
+                            className="price-edit-trigger"
+                            onClick={() => {
+                              setEditingPrice(netPosition.contract);
+                              setEditingPriceValue(netPosition.currentPrice.toString());
+                            }}
+                            title="Editar preço atual"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                          </button>
+                        </span>
+                      )}
+                    </div>,
                     
                     // P&L Acumulado
                     <span key="pnl" className={netPosition.unrealizedPnL >= 0 ? 'positive' : 'negative'}>
@@ -615,33 +692,30 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
         );
 
       case 'performance':
-        const openPositions = filteredPositions.filter(p => p.status === 'EXECUTADA' || p.status === 'EM_ABERTO');
-        const closedPositions = filteredPositions.filter(p => p.status === 'FECHADA');
-        
-        // Calcular métricas de performance
-        const totalPnlRealized = closedPositions.reduce((sum, pos) => sum + (pos.realized_pnl || 0), 0);
+        // 🚀 LÓGICA CORRIGIDA: Usar getPartialPnLForPerformance que já calcula corretamente
+        const realizedPnL = getPartialPnLForPerformance;
+        const totalPnlRealized = realizedPnL.reduce((sum, entry) => sum + entry.pnl, 0);
         const totalPnlUnrealized = netStats.totalUnrealizedPnL;
         const totalPnl = totalPnlRealized + totalPnlUnrealized;
         
-        const winningPositions = closedPositions.filter(p => (p.realized_pnl || 0) > 0).length;
-        const losingPositions = closedPositions.filter(p => (p.realized_pnl || 0) < 0).length;
-        const winRate = closedPositions.length > 0 ? (winningPositions / closedPositions.length) * 100 : 0;
+        const winningPositions = realizedPnL.filter(p => p.pnl > 0).length;
+        const losingPositions = realizedPnL.filter(p => p.pnl < 0).length;
+        const winRate = realizedPnL.length > 0 ? (winningPositions / realizedPnL.length) * 100 : 0;
         
-        // Agrupar performance por contrato
-        const contractPerformance = netPositions.map(netPos => ({
-          contract: netPos.contract,
-          product: netPos.product,
-          positions: netPos.positions.length,
-          netQuantity: netPos.netQuantity,
-          direction: netPos.netDirection,
-          pnl: netPos.unrealizedPnL,
-          exposure: netPos.exposure,
-          roi: netPos.exposure > 0 ? (netPos.unrealizedPnL / netPos.exposure) * 100 : 0
+        // Usar dados de P&L realizado para performance
+        const contractPerformance = realizedPnL.map(entry => ({
+          contract: entry.contract,
+          product: entry.product,
+          status: entry.status,
+          pnl: entry.pnl,
+          quantidadeLiquidada: entry.quantidadeLiquidada,
+          ultimaOperacao: entry.ultimaOperacao,
+          operacoesRealizadas: entry.operacoesRealizadas
         }));
         
         return (
           <div className="card">
-            <h2>Performance das Posições ({filteredPositions.length} posições - {currentPeriodDescription})</h2>
+            <h2>P&L Realizado ({realizedPnL.length} operações - {currentPeriodDescription})</h2>
             
             {/* Resumo de Performance */}
             <div className="performance-summary">
@@ -690,41 +764,56 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
                     {netPositions.length}
                   </div>
                   <div className="metric-detail">
-                    {netStats.longPositions}L / {netStats.shortPositions}S
+                    {netStats.buyPositions}C / {netStats.sellPositions}V
                   </div>
                 </div>
               </div>
             </div>
             
-            {/* Performance por Contrato */}
+            {/* P&L Realizado por Contrato */}
             {contractPerformance.length > 0 ? (
               <div className="performance-breakdown">
-                <h3>Performance por Contrato</h3>
+                <h3>P&L Realizado por Contrato</h3>
                 <DataTable
-                  headers={['Ativo', 'Direção', 'Qtd. Líquida', 'P&L Não Real.', 'Exposição', 'ROI']}
+                  headers={['Ativo', 'Status', 'Quantidade', 'P&L Realizado', 'Última Operação']}
                   data={contractPerformance.map(contract => [
                     <div key="asset" className="asset-info">
                       <div className="asset-code">{contract.contract}</div>
                       <div className="asset-name">{contract.product}</div>
                     </div>,
-                    <span 
-                      key="direction" 
-                      className={`direction-badge ${contract.direction.toLowerCase()}`}
-                    >
-                      {contract.direction}
+                    <span key="status" className={`badge ${
+                      contract.status === 'FECHADA' ? 'badge-success' : 'badge-warning'
+                    }`}>
+                      {contract.status === 'FECHADA' ? 'FECHADA' : 'REDUÇÃO PARCIAL'}
                     </span>,
-                    <span key="quantity" className="quantity-display">
-                      {formatNetQuantity(contract.netQuantity)}
-                    </span>,
+                    <strong key="quantity" style={{ 
+                      fontSize: '16px',
+                      color: contract.status === 'FECHADA' ? '#059669' : '#d97706'
+                    }}>
+                      {contract.quantidadeLiquidada || contract.netQuantity || 0}
+                    </strong>,
                     <span key="pnl" className={contract.pnl >= 0 ? 'positive' : 'negative'}>
                       {contract.pnl >= 0 ? '+' : ''}R$ {contract.pnl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>,
-                    <span key="exposure" className="exposure-value">
-                      R$ {contract.exposure.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </span>,
-                    <span key="roi" className={contract.roi >= 0 ? 'positive' : 'negative'}>
-                      {contract.roi >= 0 ? '+' : ''}{contract.roi.toFixed(2)}%
-                    </span>
+                    <div key="date" style={{ fontSize: '13px' }}>
+                      {(() => {
+                        const dataUltima = contract.ultimaRealizacao || contract.ultimaOperacao;
+                        
+                        if (dataUltima) {
+                          const data = parseLocalDate(dataUltima);
+                          return (
+                            <div>
+                              <strong>{formatDateBR(data)}</strong>
+                              <br />
+                              <span style={{ color: 'var(--text-secondary)' }}>
+                                {formatTimeBR(data)}
+                              </span>
+                            </div>
+                          );
+                        }
+                        return <span style={{ color: 'var(--text-secondary)' }}>N/A</span>;
+                      })()}
+                    </div>
                   ])}
                 />
               </div>
@@ -734,10 +823,12 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
                   <path d="M3 3v18h18"></path>
                   <path d="M7 12l4-4 4 4 6-6"></path>
                 </svg>
-                <p>Nenhuma posição ativa encontrada</p>
-                <span>Cadastre algumas posições para ver a análise de performance</span>
+                <p>Nenhum P&L realizado encontrado</p>
+                <span>Realize operações de redução ou fechamento para ver o P&L realizado</span>
               </div>
             )}
+
+
           </div>
         );
 
@@ -913,7 +1004,7 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
             acc[monthKey] += pos.realized_pnl;
           } else if (pos.status === 'EXECUTADA' || pos.status === 'EM_ABERTO') {
             const contractSize = pos.contract.startsWith('BGI') ? 330 : 450;
-            const unrealizedPnl = (pos.direction === 'LONG' ? 1 : -1) * 
+                          const unrealizedPnl = (pos.direction === 'COMPRA' ? 1 : -1) * 
               ((pos.current_price || pos.entry_price) - pos.entry_price) * 
               pos.quantity * contractSize;
             acc[monthKey] += unrealizedPnl;
@@ -968,7 +1059,7 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
                           </div>
                           <div style={{ background: 'var(--bg-primary)', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
                             <div style={{ 
-                              background: direction === 'LONG' ? '#10b981' : '#ef4444', 
+                              background: direction === 'COMPRA' ? '#10b981' : '#ef4444', 
                               height: '100%', 
                               width: `${percentage}%`,
                               borderRadius: '4px'
@@ -1160,7 +1251,7 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
                   {(() => {
                     const contractSize = selectedConsolidated.contract.startsWith('BGI') ? 330 : 450;
                     const priceDiff = selectedConsolidated.currentPrice - selectedConsolidated.weightedEntryPrice;
-                    const multiplier = selectedConsolidated.netDirection === 'LONG' ? 1 : -1;
+                    const multiplier = selectedConsolidated.netDirection === 'COMPRA' ? 1 : -1;
                     const unrealizedPnL = multiplier * priceDiff * Math.abs(selectedConsolidated.netQuantity) * contractSize;
                     const pnlPercentage = (priceDiff / selectedConsolidated.weightedEntryPrice) * 100 * multiplier;
                     const totalExposure = selectedConsolidated.weightedEntryPrice * Math.abs(selectedConsolidated.netQuantity) * contractSize;
@@ -1219,7 +1310,7 @@ export default function PosicoesPage({ selectedPeriod }: PosicoesPageProps) {
                       const contractSize = position.contract.startsWith('BGI') ? 330 : 450;
                       const currentPrice = position.current_price || selectedConsolidated.currentPrice;
                       const priceDiff = currentPrice - position.entry_price;
-                      const multiplier = position.direction === 'LONG' ? 1 : -1;
+                      const multiplier = position.direction === 'COMPRA' ? 1 : -1;
                       const individualPnL = multiplier * priceDiff * position.quantity * contractSize;
                       
                       return [

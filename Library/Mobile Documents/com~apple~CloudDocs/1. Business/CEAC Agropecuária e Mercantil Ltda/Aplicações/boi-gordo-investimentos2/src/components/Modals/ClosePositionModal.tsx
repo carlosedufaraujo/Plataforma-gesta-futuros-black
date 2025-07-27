@@ -118,11 +118,11 @@ export default function ClosePositionModal({
 
   // Calcular P&L considerando o tamanho dos contratos
   const contractSize = position.contract.startsWith('BGI') ? 330 : 450;
-  const currentPnL = (position.direction === 'LONG' ? 1 : -1) * 
+      const currentPnL = (position.direction === 'COMPRA' ? 1 : -1) * 
     ((position.current_price || position.entry_price) - position.entry_price) * 
     position.quantity * contractSize;
   
-  const estimatedPnL = (position.direction === 'LONG' ? 1 : -1) * 
+      const estimatedPnL = (position.direction === 'COMPRA' ? 1 : -1) * 
     (formData.closePrice - position.entry_price) * 
     formData.quantity * contractSize;
   
@@ -153,7 +153,7 @@ export default function ClosePositionModal({
           <div className="position-summary">
             <div className="summary-row">
               <span className="summary-label">Direção</span>
-              <span className={`badge ${position.direction === 'LONG' ? 'badge-success' : 'badge-danger'}`}>
+              <span className={`badge ${position.direction === 'COMPRA' ? 'badge-success' : 'badge-danger'}`}>
                 {position.direction}
               </span>
             </div>
@@ -246,7 +246,7 @@ export default function ClosePositionModal({
               </div>
               <div className="pnl-content">
                 <div className={`pnl-amount ${estimatedPnL > 0 ? 'positive' : estimatedPnL < 0 ? 'negative' : 'neutral'}`}>
-                  {estimatedPnL < 0 ? '-' : ''}R$ {Math.abs(estimatedPnL).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {estimatedPnL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </div>
                 <div className="pnl-details">
                   <span className="pnl-detail-item">
@@ -255,8 +255,8 @@ export default function ClosePositionModal({
                   </span>
                   <span className="pnl-detail-item">
                     <span className="detail-label">Diferença por contrato:</span>
-                    <span className={`detail-value ${((position.direction === 'LONG' ? 1 : -1) * (formData.closePrice - position.entry_price) * contractSize) > 0 ? 'positive' : ((position.direction === 'LONG' ? 1 : -1) * (formData.closePrice - position.entry_price) * contractSize) < 0 ? 'negative' : 'neutral'}`}>
-                      {((position.direction === 'LONG' ? 1 : -1) * (formData.closePrice - position.entry_price) * contractSize) < 0 ? '-' : ''}R$ {Math.abs((position.direction === 'LONG' ? 1 : -1) * (formData.closePrice - position.entry_price) * contractSize).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            <span className={`detail-value ${((position.direction === 'COMPRA' ? 1 : -1) * (formData.closePrice - position.entry_price) * contractSize) > 0 ? 'positive' : ((position.direction === 'COMPRA' ? 1 : -1) * (formData.closePrice - position.entry_price) * contractSize) < 0 ? 'negative' : 'neutral'}`}>
+          {((position.direction === 'COMPRA' ? 1 : -1) * (formData.closePrice - position.entry_price) * contractSize).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </span>
                   </span>
                 </div>

@@ -557,7 +557,7 @@ export default function OpcoesPage({ selectedPeriod }: OpcoesPageProps) {
               </span>,
               activeTab === 'ativas' ? (
                 <span key="pnl" className={pnl >= 0 ? 'positive' : 'negative'}>
-                  {pnl >= 0 ? '+' : ''}R$ {Math.abs(pnl).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  {pnl >= 0 ? '+' : ''}{pnl.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                 </span>
               ) : '-'
             ];
@@ -631,7 +631,7 @@ export default function OpcoesPage({ selectedPeriod }: OpcoesPageProps) {
         <div className="metric-card">
           <div className="metric-label">P&L Total</div>
           <div className={`metric-value ${totalPnL >= 0 ? 'positive' : 'negative'}`}>
-            {totalPnL >= 0 ? '+' : ''}R$ {Math.abs(totalPnL).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            {totalPnL >= 0 ? '+' : ''}{totalPnL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
           </div>
           <div className={`metric-change ${totalPnL >= 0 ? 'positive' : 'negative'}`}>
             {totalPremiumPaid > 0 ? ((totalPnL / totalPremiumPaid) * 100).toFixed(1) : '0.0'}%

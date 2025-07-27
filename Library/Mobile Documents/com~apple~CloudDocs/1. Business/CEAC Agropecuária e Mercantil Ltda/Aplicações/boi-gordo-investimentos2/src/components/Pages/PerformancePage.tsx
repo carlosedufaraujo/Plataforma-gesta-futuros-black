@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, BarChart3 } from 'lucide-react';
 import { useHybridData } from '@/contexts/HybridDataContext';
+import { useNetPositions } from '@/hooks/useNetPositions';
 import TabNavigation from '@/components/Common/TabNavigation';
 import DataTable from '@/components/Common/DataTable';
 import StatusBadge from '@/components/Common/StatusBadge';
@@ -16,6 +17,12 @@ interface PerformancePageProps {
 export default function PerformancePage({ selectedPeriod }: PerformancePageProps) {
   const [activeTab, setActiveTab] = useState<PerformanceTabType>('overview');
   const { positions, transactions, options, currentUser } = useHybridData();
+  
+  // ✅ CORREÇÃO: Usar apenas posições NEUTRALIZADAS para Performance
+  const { getNeutralizedPositionsForPerformance } = useNetPositions();
+  const neutralizedPositions = getNeutralizedPositionsForPerformance;
+  
+  console.log('🎯 PERFORMANCE PAGE: Usando APENAS posições neutralizadas:', neutralizedPositions.length);
 
   const tabs = [
     { 
@@ -71,11 +78,11 @@ export default function PerformancePage({ selectedPeriod }: PerformancePageProps
     }
   ];
 
-  // Calcular dados de performance baseados nos dados reais
+  // ✅ CORREÇÃO: Calcular dados de performance baseados APENAS em posições NEUTRALIZADAS
   const performanceData = useMemo(() => {
-    console.log('🔄 PERFORMANCE PAGE: Recalculando métricas - positions:', positions.length, 'transactions:', transactions.length);
+    console.log('🔄 PERFORMANCE PAGE: Recalculando métricas com posições neutralizadas:', neutralizedPositions.length, 'transactions:', transactions.length);
     
-    if (!positions.length && !transactions.length) {
+    if (!neutralizedPositions.length) {
       return {
         assetPerformance: [],
         monthlyPerformance: [],
@@ -91,12 +98,10 @@ export default function PerformancePage({ selectedPeriod }: PerformancePageProps
       };
     }
 
-    // Análise por ativo
+    // ✅ CORREÇÃO: Análise por ativo usando APENAS posições NEUTRALIZADAS
     const assetStats = {};
-    positions.forEach(position => {
-      const asset = position.contract.startsWith('BGI') ? 'Boi Gordo' :
-                   position.contract.startsWith('CCM') ? 'Milho' :
-                   position.contract.startsWith('SFI') ? 'Soja' : 'Outros';
+    neutralizedPositions.forEach(neutralized => {
+      const asset = neutralized.product; // Já vem processado ('Boi Gordo', 'Milho', etc.)
 
       if (!assetStats[asset]) {
         assetStats[asset] = {
@@ -109,18 +114,18 @@ export default function PerformancePage({ selectedPeriod }: PerformancePageProps
         };
       }
 
-      assetStats[asset].contracts += position.quantity;
-      assetStats[asset].exposure += position.entry_price * position.quantity * (position.contract.startsWith('BGI') ? 330 : 450);
+      // Para posições neutralizadas, usar dados processados
+      const totalContracts = neutralized.positions ? neutralized.positions.reduce((sum, pos) => sum + pos.quantity, 0) : 0;
+      assetStats[asset].contracts += totalContracts;
+      assetStats[asset].exposure += neutralized.exposure || 0;
       assetStats[asset].trades += 1;
 
-      if (position.realized_pnl) {
-        assetStats[asset].result += position.realized_pnl;
-        if (position.realized_pnl > 0) {
+      // Usar P&L já calculado das posições neutralizadas
+      if (neutralized.pnl) {
+        assetStats[asset].result += neutralized.pnl;
+        if (neutralized.pnl > 0) {
           assetStats[asset].wins += 1;
         }
-      }
-      if (position.unrealized_pnl) {
-        assetStats[asset].result += position.unrealized_pnl;
       }
     });
 
@@ -157,18 +162,20 @@ export default function PerformancePage({ selectedPeriod }: PerformancePageProps
       monthlyStats[month] || { month, result: 0, contracts: 0, exposure: 0, drawdown: 0 }
     );
 
-    // Métricas gerais
-    const totalResult = positions.reduce((sum, pos) => {
-      return sum + (pos.realized_pnl || 0) + (pos.unrealized_pnl || 0);
+    // ✅ CORREÇÃO: Métricas gerais usando APENAS posições NEUTRALIZADAS
+    const totalResult = neutralizedPositions.reduce((sum, neutralized) => {
+      return sum + (neutralized.pnl || 0);
     }, 0);
 
-    const totalContracts = positions.reduce((sum, pos) => sum + pos.quantity, 0);
-    const winningPositions = positions.filter(pos => (pos.realized_pnl || 0) + (pos.unrealized_pnl || 0) > 0).length;
-    const winRate = positions.length > 0 ? (winningPositions / positions.length) * 100 : 0;
+    const totalContracts = neutralizedPositions.reduce((sum, neutralized) => {
+      const contractCount = neutralized.positions ? neutralized.positions.reduce((posSum, pos) => posSum + pos.quantity, 0) : 0;
+      return sum + contractCount;
+    }, 0);
     
-    const maxExposure = Math.max(...positions.map(pos => 
-      pos.entryPrice * pos.quantity * (pos.contract.startsWith('BGI') ? 330 : 450)
-    ), 0);
+    const winningPositions = neutralizedPositions.filter(neutralized => (neutralized.pnl || 0) > 0).length;
+    const winRate = neutralizedPositions.length > 0 ? (winningPositions / neutralizedPositions.length) * 100 : 0;
+    
+    const maxExposure = Math.max(...neutralizedPositions.map(neutralized => neutralized.exposure || 0), 0);
 
     const initialCapital = 200000; // Deveria vir das configurações do usuário
     const roi = initialCapital > 0 ? (totalResult / initialCapital) * 100 : 0;
@@ -180,7 +187,7 @@ export default function PerformancePage({ selectedPeriod }: PerformancePageProps
         { range: '< -50k', count: 0, color: '#dc2626' },
         { range: '-50k a -10k', count: 0, color: '#ea580c' },
         { range: '-10k a 0', count: 0, color: '#f59e0b' },
-        { range: '0 a 10k', count: positions.length, color: '#84cc16' },
+        { range: '0 a 10k', count: neutralizedPositions.length, color: '#84cc16' },
         { range: '10k a 50k', count: 0, color: '#22c55e' },
         { range: '> 50k', count: 0, color: '#16a34a' }
       ],
@@ -198,7 +205,7 @@ export default function PerformancePage({ selectedPeriod }: PerformancePageProps
       roi,
       avgHoldingDays: 15 // Seria calculado baseado nas datas das posições
     };
-  }, [positions, transactions, selectedPeriod]);
+  }, [neutralizedPositions, transactions, selectedPeriod]);
 
   // Estados vazios para quando não há dados
   const renderEmptyState = (title: string, description: string) => (
@@ -299,79 +306,183 @@ export default function PerformancePage({ selectedPeriod }: PerformancePageProps
     </div>
   );
 
-  const renderAssets = () => (
-    <div className="performance-grid">
-      <div className="performance-card asset-breakdown">
-        <h3>Performance por Ativo</h3>
-        {performanceData.assetPerformance.length > 0 ? (
-          <div className="asset-performance-list">
-            {performanceData.assetPerformance.map((asset, index) => (
-              <div key={index} className="asset-performance-item">
-                <div className="asset-info">
-                  <div className="asset-name">{asset.asset}</div>
-                  <div className="asset-stats">
-                    {asset.contracts} contratos • Win Rate: {asset.winRate.toFixed(1)}%
-                  </div>
-                </div>
-                <div className="asset-result">
-                  <div className={`asset-pnl ${asset.result >= 0 ? 'positive' : 'negative'}`}>
-                    {asset.result >= 0 ? '+' : ''}
-                    {Math.abs(asset.result).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </div>
-                  <div className="asset-exposure">
-                    Exposição: {asset.exposure.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="empty-state-small">
-            <p>Sem dados de ativos para exibir</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  const renderAssets = () => {
+    // Função para obter última transação por ativo
+    const getLastTransactionForAsset = (assetName: string) => {
+      // Mapear nome do ativo para prefixos de contrato
+      const contractPrefixes = {
+        'Boi Gordo': 'BGI',
+        'Milho': 'CCM', 
+        'Soja': 'SFI'
+      };
+      
+      const prefix = contractPrefixes[assetName as keyof typeof contractPrefixes];
+      if (!prefix) return null;
+      
+      // Filtrar transações do ativo
+      const assetTransactions = transactions.filter(t => 
+        t.contract && t.contract.startsWith(prefix)
+      );
+      
+      if (assetTransactions.length === 0) return null;
+      
+      // Ordenar por data e pegar a mais recente
+      const lastTransaction = assetTransactions.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.date);
+        const dateB = new Date(b.createdAt || b.date);
+        return dateB.getTime() - dateA.getTime();
+      })[0];
+      
+      return lastTransaction;
+    };
 
-  const renderTemporal = () => (
-    <div className="performance-grid">
-      <div className="performance-card temporal-analysis">
-        <h3>Análise Temporal</h3>
-        {performanceData.monthlyPerformance.length > 0 ? (
-          <div className="temporal-chart">
-            <table className="performance-table">
-              <thead>
-                <tr>
-                  <th>Mês</th>
-                  <th>Resultado</th>
-                  <th>Contratos</th>
-                  <th>Exposição</th>
-                </tr>
-              </thead>
-              <tbody>
-                {performanceData.monthlyPerformance.map((month, index) => (
-                  <tr key={index}>
-                    <td><strong>{month.month}</strong></td>
-                    <td className={month.result >= 0 ? 'positive' : 'negative'}>
-                      {month.result >= 0 ? '+' : ''}
-                      {Math.abs(month.result).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                    </td>
-                    <td>{month.contracts}</td>
-                    <td>{month.exposure.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="empty-state-small">
-            <p>Sem dados temporais para exibir</p>
-          </div>
-        )}
+    return (
+      <div className="performance-grid">
+        <div className="performance-card asset-breakdown">
+          <h3>Performance por Ativo</h3>
+          {performanceData.assetPerformance.length > 0 ? (
+            <div className="asset-performance-list">
+              {performanceData.assetPerformance.map((asset, index) => {
+                const lastTransaction = getLastTransactionForAsset(asset.asset);
+                
+                return (
+                  <div key={index} className="asset-performance-item">
+                    <div className="asset-info">
+                      <div className="asset-name">{asset.asset}</div>
+                      <div className="asset-stats">
+                        {asset.contracts} contratos • Win Rate: {asset.winRate.toFixed(1)}%
+                      </div>
+                    </div>
+                    <div className="asset-result">
+                      <div className={`asset-pnl ${asset.result >= 0 ? 'positive' : 'negative'}`}>
+                        {asset.result >= 0 ? '+' : ''}
+                        {Math.abs(asset.result).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </div>
+                      <div className="asset-last-transaction">
+                        {lastTransaction ? (
+                          <div>
+                            <strong>Última Transação:</strong>
+                            <div style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                              {new Date(lastTransaction.createdAt || lastTransaction.date).toLocaleDateString('pt-BR')} às {' '}
+                              {new Date(lastTransaction.createdAt || lastTransaction.date).toLocaleTimeString('pt-BR', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#888', marginTop: '1px' }}>
+                              {lastTransaction.type} {lastTransaction.contract}
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ color: '#999', fontSize: '12px' }}>
+                            <strong>Última Transação:</strong> Sem dados
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="empty-state-small">
+              <p>Sem dados de ativos para exibir</p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
+
+  const renderTemporal = () => {
+    // Função para obter última transação de um período
+    const getLastTransactionForPeriod = (monthData: any) => {
+      // Filtrar transações do período se existirem
+      const periodTransactions = transactions.filter(t => {
+        if (!t.createdAt && !t.date) return false;
+        const transactionDate = new Date(t.createdAt || t.date);
+        const monthMatch = transactionDate.toLocaleDateString('pt-BR', { month: '2-digit', year: 'numeric' });
+        return monthMatch === monthData.month || monthData.month.includes(monthMatch);
+      });
+      
+      if (periodTransactions.length === 0) return null;
+      
+      // Ordenar por data e pegar a mais recente
+      const lastTransaction = periodTransactions.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.date);
+        const dateB = new Date(b.createdAt || b.date);
+        return dateB.getTime() - dateA.getTime();
+      })[0];
+      
+      return lastTransaction;
+    };
+
+    return (
+      <div className="performance-grid">
+        <div className="performance-card temporal-analysis">
+          <h3>Análise Temporal</h3>
+          {performanceData.monthlyPerformance.length > 0 ? (
+            <div className="temporal-chart">
+              <table className="performance-table">
+                <thead>
+                  <tr>
+                    <th>Mês</th>
+                    <th>Resultado</th>
+                    <th>Contratos</th>
+                    <th>ÚLTIMA TRANSAÇÃO</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {performanceData.monthlyPerformance.map((month, index) => {
+                    const lastTransaction = getLastTransactionForPeriod(month);
+                    
+                    return (
+                      <tr key={index}>
+                        <td><strong>{month.month}</strong></td>
+                        <td className={month.result >= 0 ? 'positive' : 'negative'}>
+                          {month.result >= 0 ? '+' : ''}
+                          {Math.abs(month.result).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </td>
+                        <td>{month.contracts}</td>
+                        <td>
+                          {lastTransaction ? (
+                            <div className="last-transaction-info">
+                              <div className="transaction-date">
+                                <strong>
+                                  {new Date(lastTransaction.createdAt || lastTransaction.date).toLocaleDateString('pt-BR')}
+                                </strong>
+                              </div>
+                              <div className="transaction-time" style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                                {new Date(lastTransaction.createdAt || lastTransaction.date).toLocaleTimeString('pt-BR', { 
+                                  hour: '2-digit', 
+                                  minute: '2-digit' 
+                                })}
+                              </div>
+                              <div className="transaction-details" style={{ fontSize: '11px', color: '#888', marginTop: '1px' }}>
+                                {lastTransaction.type} {lastTransaction.contract}
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ color: '#999', fontSize: '12px' }}>
+                              Sem transações
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="empty-state-small">
+              <p>Sem dados temporais para exibir</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const renderRisk = () => (
     <div className="performance-grid">
